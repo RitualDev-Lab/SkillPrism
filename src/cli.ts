@@ -11,7 +11,8 @@ const sampleSkills: SkillDefinition[] = [
     id: "postgres_query",
     name: "PostgreSQL Query Exec",
     summary: "Executes parameterized read queries against production PostgreSQL clusters",
-    description: "Performs read-only SQL queries with built-in connection pooling and PII redaction.",
+    description:
+      "Performs read-only SQL queries with built-in connection pooling and PII redaction.",
     category: "database",
     tags: ["sql", "postgres", "db", "database", "query"],
     permissions: ["db:read"],
@@ -144,7 +145,7 @@ async function main() {
         console.log(`✅ Imported ${imported} tool definitions into catalog!`);
       }
       await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
-      console.log(`💾 Saved updated catalog to .skillprism.json`);
+      console.log("💾 Saved updated catalog to .skillprism.json");
     } catch (err: any) {
       console.error(`❌ Failed to import file: ${err.message}`);
     }
@@ -164,9 +165,18 @@ async function main() {
         tags: [cat, `service_${i}`, "enterprise", "integration"],
         permissions: [`${cat}:exec`],
         parameters: [
-          { name: "targetId", type: "string", description: "Identifier of the target entity", required: true },
+          {
+            name: "targetId",
+            type: "string",
+            description: "Identifier of the target entity",
+            required: true,
+          },
           { name: "options", type: "object", description: "Execution configuration payload" },
-          { name: "dryRun", type: "boolean", description: "Simulate action without persisting changes" },
+          {
+            name: "dryRun",
+            type: "boolean",
+            description: "Simulate action without persisting changes",
+          },
         ],
       });
     }
@@ -177,18 +187,24 @@ async function main() {
     console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
     console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
     console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
-    console.log(`💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`);
+    console.log(
+      `💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`,
+    );
   } else if (command === "sync") {
     console.log("\n🌐 Ingesting Tools into Out-of-Context Index...\n");
     const res = await DevShelfSync.syncToCatalog(index);
     if (res.isFallback) {
-      console.log(`ℹ️ [Offline Mode] Ingested ${res.totalSynced} seed community tools (live directory unavailable).`);
+      console.log(
+        `ℹ️ [Offline Mode] Ingested ${res.totalSynced} seed community tools (live directory unavailable).`,
+      );
     } else {
-      console.log(`✅ Successfully synced ${res.totalSynced} verified tools from DevShelf directory!`);
+      console.log(
+        `✅ Successfully synced ${res.totalSynced} verified tools from DevShelf directory!`,
+      );
     }
     console.log("📊 Categories ingested:", res.categories);
     await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
-    console.log(`💾 Saved updated catalog to .skillprism.json`);
+    console.log("💾 Saved updated catalog to .skillprism.json");
   } else if (command === "proxy") {
     const harness = new JitHarness(index);
     const interceptor = new McpProtocolInterceptor(harness, index);

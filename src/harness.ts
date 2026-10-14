@@ -63,7 +63,8 @@ export class JitHarness {
           properties: {
             intent: {
               type: "string",
-              description: "What action or tool you need (e.g., 'query postgres table', 'upload file to S3')",
+              description:
+                "What action or tool you need (e.g., 'query postgres table', 'upload file to S3')",
             },
             limit: {
               type: "number",
@@ -82,7 +83,8 @@ export class JitHarness {
           properties: {
             skill_id: {
               type: "string",
-              description: "The unique identifier of the skill to activate (e.g., 'postgres_query')",
+              description:
+                "The unique identifier of the skill to activate (e.g., 'postgres_query')",
             },
           },
           required: ["skill_id"],
@@ -97,7 +99,8 @@ export class JitHarness {
           properties: {
             ref: {
               type: "string",
-              description: "The receipt reference token returned by a compacted tool (e.g. 'receipt:sample_exec:4a7f9b8c')",
+              description:
+                "The receipt reference token returned by a compacted tool (e.g. 'receipt:sample_exec:4a7f9b8c')",
             },
             path: {
               type: "string",
@@ -136,7 +139,10 @@ export class JitHarness {
   /**
    * Execute a meta-tool invocation called by the LLM
    */
-  public async handleMetaToolCall(name: string, args: Record<string, any>): Promise<MetaToolCallResult> {
+  public async handleMetaToolCall(
+    name: string,
+    args: Record<string, any>,
+  ): Promise<MetaToolCallResult> {
     if (name === "search_skills") {
       const intent = args.intent;
       const limit = typeof args.limit === "number" ? args.limit : 3;

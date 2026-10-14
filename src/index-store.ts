@@ -53,7 +53,11 @@ export class SkillIndex {
    */
   public exportToJson(): string {
     const list = Array.from(this.skills.values());
-    return JSON.stringify({ version: "1.1.1", exportedAt: new Date().toISOString(), skills: list }, null, 2);
+    return JSON.stringify(
+      { version: "1.1.1", exportedAt: new Date().toISOString(), skills: list },
+      null,
+      2,
+    );
   }
 
   /**
@@ -61,7 +65,7 @@ export class SkillIndex {
    */
   public importFromJson(jsonStr: string): number {
     const parsed = JSON.parse(jsonStr);
-    const skills: SkillDefinition[] = Array.isArray(parsed) ? parsed : (parsed.skills || []);
+    const skills: SkillDefinition[] = Array.isArray(parsed) ? parsed : parsed.skills || [];
     let imported = 0;
     for (const s of skills) {
       this.register(s);
@@ -164,7 +168,9 @@ export class SkillIndex {
    * Import tools from standard Model Context Protocol (MCP) tools/list response
    * Includes prompt injection sanitization, tag bounding, and description length capping.
    */
-  public importFromMcp(toolsList: Array<{ name: string; description?: string; inputSchema?: any }>): number {
+  public importFromMcp(
+    toolsList: Array<{ name: string; description?: string; inputSchema?: any }>,
+  ): number {
     let count = 0;
     for (const tool of toolsList) {
       const parameters: any[] = [];
@@ -190,7 +196,10 @@ export class SkillIndex {
       const safeName = tool.name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
       const rawDesc = tool.description || `Tool: ${safeName}`;
       // Strip control / template escape characters and cap description length
-      const cleanDesc = rawDesc.replace(/[<>{}`$]/g, "").slice(0, 300).trim();
+      const cleanDesc = rawDesc
+        .replace(/[<>{}`$]/g, "")
+        .slice(0, 300)
+        .trim();
       const cleanSummary = cleanDesc.slice(0, 120);
 
       this.register({
@@ -217,14 +226,16 @@ export class SkillIndex {
 
     for (const [pathUrl, methods] of Object.entries<any>(paths)) {
       for (const [method, op] of Object.entries<any>(methods)) {
-        if (["get", "post", "put", "delete", "patch"].indexOf(method.toLowerCase()) === -1) continue;
+        if (["get", "post", "put", "delete", "patch"].indexOf(method.toLowerCase()) === -1)
+          continue;
 
         const operationId =
           op.operationId ||
           `${method}_${pathUrl.replace(/[^a-zA-Z0-9]/g, "_").replace(/^_+|_+$/g, "")}`;
         const safeId = operationId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
         const summary = op.summary || op.description || `${method.toUpperCase()} ${pathUrl}`;
-        const description = op.description || op.summary || `API endpoint ${method.toUpperCase()} ${pathUrl}`;
+        const description =
+          op.description || op.summary || `API endpoint ${method.toUpperCase()} ${pathUrl}`;
 
         const parameters: any[] = [];
         // Path/query parameters
@@ -240,7 +251,7 @@ export class SkillIndex {
         }
         // RequestBody schema
         const requestBody = op.requestBody?.content?.["application/json"]?.schema;
-        if (requestBody && requestBody.properties) {
+        if (requestBody?.properties) {
           const req = requestBody.required || [];
           for (const [propName, propDef] of Object.entries<any>(requestBody.properties)) {
             parameters.push({
@@ -256,7 +267,17 @@ export class SkillIndex {
         tags.push(method.toLowerCase(), "openapi");
 
         const rawCat = tags[0] || "api";
-        const validCategories = ["database", "cloud", "api", "devops", "security", "ai", "file-system", "git", "general"];
+        const validCategories = [
+          "database",
+          "cloud",
+          "api",
+          "devops",
+          "security",
+          "ai",
+          "file-system",
+          "git",
+          "general",
+        ];
         const category = validCategories.includes(rawCat) ? (rawCat as any) : "api";
 
         this.register({
@@ -292,7 +313,8 @@ export class SkillIndex {
       totalSkills: this.skills.size,
       categories,
       totalIndexedTerms: this.bm25.getTotalTerms(),
-      averageSummaryLength: this.skills.size > 0 ? Math.round(totalSummaryLength / this.skills.size) : 0,
+      averageSummaryLength:
+        this.skills.size > 0 ? Math.round(totalSummaryLength / this.skills.size) : 0,
       savedContextTokensEstimate: savedTokens,
     };
   }

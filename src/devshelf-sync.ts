@@ -29,7 +29,7 @@ export class DevShelfSync {
    */
   public static async syncToCatalog(
     index: SkillIndex,
-    customFetch?: (url: string) => Promise<any>
+    customFetch?: (url: string) => Promise<any>,
   ): Promise<DevShelfSyncResult> {
     const categories: Record<string, number> = {};
     let items: DevShelfRawItem[] = [];
@@ -61,7 +61,11 @@ export class DevShelfSync {
     const seenIds = new Set<string>();
 
     for (const item of items) {
-      const baseSlug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 50);
+      const baseSlug = item.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 50);
       let slug = baseSlug || "tool";
       let counter = 1;
       while (seenIds.has(slug)) {
@@ -102,7 +106,8 @@ export class DevShelfSync {
       {
         name: "Supabase",
         url: "https://supabase.com",
-        description: "Open source Firebase alternative with Postgres database, Authentication, instant APIs, and Realtime.",
+        description:
+          "Open source Firebase alternative with Postgres database, Authentication, instant APIs, and Realtime.",
         category: "database",
         tags: ["postgres", "auth", "api", "backend"],
       },

@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
 import * as readline from "node:readline";
 import type { McpProtocolInterceptor } from "./interceptor.js";
 
@@ -38,11 +38,11 @@ export class SkillPrismProxyServer {
         const response = await this.interceptor.handleMessage(parsed);
         // Only reply if message is not a notification (has an id)
         if (parsed.id !== undefined && parsed.id !== null) {
-          process.stdout.write(JSON.stringify(response) + "\n");
+          process.stdout.write(`${JSON.stringify(response)}\n`);
         }
       } catch (err: any) {
         process.stdout.write(
-          JSON.stringify({
+          `${JSON.stringify({
             jsonrpc: "2.0",
             id: null,
             error: {
@@ -50,7 +50,7 @@ export class SkillPrismProxyServer {
               message: "Parse error",
               data: err.message,
             },
-          }) + "\n"
+          })}\n`,
         );
       }
     });
@@ -87,13 +87,16 @@ export class SkillPrismProxyServer {
               service: "SkillPrism Progressive JIT Gateway",
               version: "1.1.1",
               protocol: "MCP 2024-11-05",
-            })
+            }),
           );
           return;
         }
 
         // JSON-RPC endpoint
-        if (req.method === "POST" && (req.url === "/mcp" || req.url === "/rpc" || req.url === "/")) {
+        if (
+          req.method === "POST" &&
+          (req.url === "/mcp" || req.url === "/rpc" || req.url === "/")
+        ) {
           let body = "";
           req.on("data", (chunk) => {
             body += chunk;
@@ -111,8 +114,8 @@ export class SkillPrismProxyServer {
                 JSON.stringify({
                   jsonrpc: "2.0",
                   id: null,
-                  error: { code: -32700, message: "Parse error: " + err.message },
-                })
+                  error: { code: -32700, message: `Parse error: ${err.message}` },
+                }),
               );
             }
           });

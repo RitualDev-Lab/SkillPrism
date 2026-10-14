@@ -102,7 +102,7 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
           context: { reason: "validation", verified: true },
         }));
       },
-      compactor
+      compactor,
     );
 
     // Pre-activate tool via load_skill to satisfy JIT Gate

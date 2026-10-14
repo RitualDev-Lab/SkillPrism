@@ -54,7 +54,9 @@ describe("Phase 1: Out-of-Context Skill Index & BM25 Catalog Suite", () => {
       description: "Sends notifications to Slack webhooks.",
       category: "api",
       tags: ["slack", "chat", "message", "notification"],
-      parameters: [{ name: "channel", type: "string", description: "Channel name", required: true }],
+      parameters: [
+        { name: "channel", type: "string", description: "Channel name", required: true },
+      ],
     });
 
     index.register({

@@ -53,7 +53,7 @@ export class ContextCompactor {
     maxByteThreshold = 512,
     defaultTtlMs = 1000 * 60 * 30,
     maxVaultEntries = 500,
-    storageDir?: string
+    storageDir?: string,
   ) {
     this.maxByteThreshold = maxByteThreshold;
     this.defaultTtlMs = defaultTtlMs;
@@ -88,7 +88,7 @@ export class ContextCompactor {
   public compact(
     toolName: string,
     rawData: any,
-    ttlMs?: number
+    ttlMs?: number,
   ): { isCompacted: boolean; output: any; receipt?: SemanticReceipt } {
     // Opportunistic automatic GC to keep memory bounded
     this.gc();
@@ -124,7 +124,7 @@ export class ContextCompactor {
         fs.writeFileSync(
           path.join(this.storageDir, safeFilename),
           JSON.stringify({ ref, data: rawData, expiresAt: expiry }),
-          "utf8"
+          "utf8",
         );
       } catch {
         // Disk write is best-effort fallback
@@ -164,7 +164,10 @@ export class ContextCompactor {
   /**
    * Model tool to inspect or drill down into specific keys of a compacted receipt
    */
-  public inspectReceipt(ref: string, queryPath?: string): { success: boolean; data?: any; error?: string } {
+  public inspectReceipt(
+    ref: string,
+    queryPath?: string,
+  ): { success: boolean; data?: any; error?: string } {
     let entry = this.vault.get(ref);
     if (!entry && this.storageDir) {
       try {
@@ -206,7 +209,10 @@ export class ContextCompactor {
 
     // Simple dot/bracket path resolution: e.g. "users.0.email"
     try {
-      const keys = queryPath.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean);
+      const keys = queryPath
+        .replace(/\[(\d+)\]/g, ".$1")
+        .split(".")
+        .filter(Boolean);
       let current = fullData;
       for (const key of keys) {
         if (current === undefined || current === null) break;
@@ -249,7 +255,7 @@ export class ContextCompactor {
 
   private extractSemanticSummary(
     toolName: string,
-    rawData: any
+    rawData: any,
   ): { summary: string; keyFields: Record<string, any> } {
     const keyFields: Record<string, any> = {};
 

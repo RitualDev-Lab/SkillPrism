@@ -8,12 +8,7 @@
   "bin": {
     "skillprism": "dist/cli.js"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE",
-    "SKILL.md"
-  ],
+  "files": ["dist", "README.md", "LICENSE", "SKILL.md"],
   "engines": {
     "node": ">=20.0.0"
   },

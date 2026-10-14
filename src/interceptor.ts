@@ -40,7 +40,7 @@ export class McpProtocolInterceptor {
     index: SkillIndex,
     upstreamExecutor?: ToolExecutionHandler,
     compactor?: ContextCompactor,
-    initialPermissions: string[] = ["*"]
+    initialPermissions: string[] = ["*"],
   ) {
     this.harness = harness;
     this.index = index;
@@ -234,7 +234,9 @@ export class McpProtocolInterceptor {
         // Enforce Server-Side Configured Permissions (Not self-granted from client params)
         if (skill.permissions && skill.permissions.length > 0) {
           const hasWildcard = this.clientPermissions.has("*");
-          const missing = skill.permissions.filter((p) => !hasWildcard && !this.clientPermissions.has(p));
+          const missing = skill.permissions.filter(
+            (p) => !hasWildcard && !this.clientPermissions.has(p),
+          );
           if (missing.length > 0) {
             return {
               jsonrpc: "2.0",

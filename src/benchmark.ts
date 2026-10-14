@@ -47,7 +47,7 @@ export class BenchmarkEngine {
     const skillPrismZeroTokens = BenchmarkEngine.countTokens(zeroStateText);
 
     const tokenSavingsPercentage = Number(
-      (((unoptimizedTokens - skillPrismZeroTokens) / unoptimizedTokens) * 100).toFixed(1)
+      (((unoptimizedTokens - skillPrismZeroTokens) / unoptimizedTokens) * 100).toFixed(1),
     );
 
     // 3. Measure search latency
@@ -70,7 +70,7 @@ export class BenchmarkEngine {
     const uncompactedBytes = Buffer.byteLength(JSON.stringify(heavyPayload));
     const compactedBytes = Buffer.byteLength(JSON.stringify(receipt));
     const compactionSavingsPercent = Number(
-      (((uncompactedBytes - compactedBytes) / uncompactedBytes) * 100).toFixed(1)
+      (((uncompactedBytes - compactedBytes) / uncompactedBytes) * 100).toFixed(1),
     );
 
     return {

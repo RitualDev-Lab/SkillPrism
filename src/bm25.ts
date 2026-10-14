@@ -99,7 +99,8 @@ export class BM25Engine {
         if (!tf || tf <= 0) continue;
 
         const docLen = this.docLengths.get(docId) || this.avgDocLength;
-        const denominator = tf + this.k1 * (1 - this.b + this.b * (docLen / (this.avgDocLength || 1)));
+        const denominator =
+          tf + this.k1 * (1 - this.b + this.b * (docLen / (this.avgDocLength || 1)));
         const termScore = idf * ((tf * (this.k1 + 1)) / denominator);
         if (termScore > 0) {
           scores.set(docId, (scores.get(docId) || 0) + termScore);

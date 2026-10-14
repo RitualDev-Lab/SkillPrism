@@ -32,7 +32,9 @@ describe("Phase 5: CLI, Benchmarking Suite & DevShelf Dogfooding Suite", () => {
       description: "Queries active kubeconfig for running pods.",
       category: "devops",
       tags: ["k8s", "kubernetes"],
-      parameters: [{ name: "namespace", type: "string", description: "K8s namespace", required: true }],
+      parameters: [
+        { name: "namespace", type: "string", description: "K8s namespace", required: true },
+      ],
     },
     {
       id: "stripe_charge",
@@ -41,7 +43,9 @@ describe("Phase 5: CLI, Benchmarking Suite & DevShelf Dogfooding Suite", () => {
       description: "Stripe API billing checkout gateway integration.",
       category: "api",
       tags: ["stripe", "billing"],
-      parameters: [{ name: "amount", type: "number", description: "Charge amount", required: true }],
+      parameters: [
+        { name: "amount", type: "number", description: "Charge amount", required: true },
+      ],
     },
   ];
 
@@ -76,9 +80,24 @@ describe("Phase 5: CLI, Benchmarking Suite & DevShelf Dogfooding Suite", () => {
 
     // Mock fetch with 3 sample tools
     const mockTools = [
-      { name: "Prisma", url: "https://prisma.io", description: "Next-generation ORM for Node.js and TypeScript", category: "database" },
-      { name: "Render", url: "https://render.com", description: "Unified cloud platform to host apps and databases", category: "cloud" },
-      { name: "Postman", url: "https://postman.com", description: "Collaborative API development platform", category: "api" }
+      {
+        name: "Prisma",
+        url: "https://prisma.io",
+        description: "Next-generation ORM for Node.js and TypeScript",
+        category: "database",
+      },
+      {
+        name: "Render",
+        url: "https://render.com",
+        description: "Unified cloud platform to host apps and databases",
+        category: "cloud",
+      },
+      {
+        name: "Postman",
+        url: "https://postman.com",
+        description: "Collaborative API development platform",
+        category: "api",
+      },
     ];
 
     const result = await DevShelfSync.syncToCatalog(index, async () => mockTools);
