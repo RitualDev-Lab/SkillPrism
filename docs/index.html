@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillPrism — Progressive Skill Disclosure & Context Compaction Engine</title>
+  <meta name="description" content="Stop preloading 200+ tool schemas. SkillPrism indexes skills out-of-context, injects only what the model needs JIT, and compacts return context by 91%.">
+
+  <!-- Tailwind CSS CDN & Custom Font -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            prism: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              900: '#4c1d95',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #05070c;
+      color: #f1f5f9;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.25) 0%, transparent 60%),
+        radial-gradient(circle at 10% 40%, rgba(6, 182, 212, 0.15) 0%, transparent 45%),
+        radial-gradient(circle at 90% 70%, rgba(236, 72, 153, 0.12) 0%, transparent 40%);
+    }
+    .glass {
+      background: rgba(13, 17, 23, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(139, 92, 246, 0.5);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-purple-500 selection:text-white">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 inset-x-0 z-50 glass border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">💎</span>
+        <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-300 bg-clip-text text-transparent">
+          SkillPrism
+        </span>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+          v0.1.0
+        </span>
+      </div>
+
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+        <a href="#benchmark" class="hover:text-purple-400 transition-colors">Benchmarks</a>
+        <a href="#how-it-works" class="hover:text-purple-400 transition-colors">How It Works</a>
+        <a href="#enterprise" class="hover:text-indigo-400 transition-colors flex items-center gap-1 font-semibold text-indigo-300">
+          <span>💼</span> Enterprise
+        </a>
+        <a href="https://donation.rolenest.in" target="_blank" class="hover:text-pink-400 transition-colors flex items-center gap-1">
+          <span>💖</span> Support / Donate
+        </a>
+        <a href="https://devshelf.ritualdev.in" target="_blank" class="hover:text-purple-400 transition-colors">DevShelf Hub</a>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://donation.rolenest.in" target="_blank" class="hidden sm:inline-flex px-3 py-1.5 rounded-lg border border-pink-500/40 bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 text-xs font-semibold transition-all">
+          💖 Donate
+        </a>
+        <a href="https://github.com/RitualDev-Lab/SkillPrism" target="_blank" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition-all shadow-lg shadow-purple-600/30 flex items-center gap-2">
+          <span>GitHub</span>
+          <span>★</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="pt-32 pb-20 px-6 max-w-5xl mx-auto text-center relative">
+    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-semibold mb-8">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span>Official Model Context Protocol (2024-11-05) JIT Gateway</span>
+    </div>
+
+    <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight mb-6">
+      Progressive Skill Disclosure <br>
+      <span class="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+        For Autonomous Coding Agents
+      </span>
+    </h1>
+
+    <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
+      Preloading hundreds of enterprise tool schemas dilutes model attention and inflates token costs. SkillPrism indexes skills <b>completely out-of-context</b>, injects only what the model needs for that exact step, and compacts return context by <b>91%</b>.
+    </p>
+
+    <!-- CLI Command Box -->
+    <div class="max-w-xl mx-auto glass rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-slate-700/80 mb-12">
+      <div class="flex items-center gap-3 text-left overflow-x-auto">
+        <span class="text-pink-400 font-mono font-bold">$</span>
+        <code class="text-xs sm:text-sm font-mono text-purple-300 select-all">
+          npx @ritualdev-lab/skillprism benchmark
+        </code>
+      </div>
+      <button onclick="navigator.clipboard.writeText('npx @ritualdev-lab/skillprism benchmark'); alert('Copied to clipboard!')" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-all">
+        Copy
+      </button>
+    </div>
+
+    <!-- Live Benchmark Cards -->
+    <div id="benchmark" class="grid sm:grid-cols-3 gap-6 text-left">
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="text-3xl font-black text-purple-400 mb-1">99.2%</div>
+        <div class="text-sm font-bold text-white mb-2">Zero-State Token Reduction</div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Shrinks 25,000+ tokens of bloated static schemas down to ~199 tokens on turn 1.
+        </p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="text-3xl font-black text-cyan-400 mb-1">&lt; 0.1 ms</div>
+        <div class="text-sm font-bold text-white mb-2">BM25 Retrieval Latency</div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Zero-dependency sub-millisecond keyword and tag affinity search over out-of-context tools.
+        </p>
+      </div>
+
+      <div class="glass-card p-6 rounded-2xl">
+        <div class="text-3xl font-black text-pink-400 mb-1">91.0%</div>
+        <div class="text-sm font-bold text-white mb-2">Context Return Compaction</div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Replaces 500-row database returns and heavy logs with compact cryptographic Semantic Receipts.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="py-20 border-t border-slate-900 bg-slate-950/50">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl font-extrabold mb-4">How SkillPrism Works</h2>
+        <p class="text-slate-400 text-sm max-w-xl mx-auto">
+          The 4-stage lifecycle eliminating context bloat and hallucinated parameters.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <div class="glass p-6 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm">1</span>
+            <h3 class="font-bold text-base text-white">Out-of-Context Indexing</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            All 500+ MCP tools and OpenAPI schemas are ingested into an ultra-fast local Okapi BM25 engine. The LLM prompt starts with 0 tools loaded, saving up to 25,000 upfront tokens.
+          </p>
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold text-sm">2</span>
+            <h3 class="font-bold text-base text-white">The JIT Meta-Tool Harness</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            The model receives only 2 meta-tools: <code class="text-purple-300 font-mono">search_skills</code> and <code class="text-purple-300 font-mono">load_skill</code>. When the agent searches for "postgres query", it receives only 1-line tool candidates.
+          </p>
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-300 flex items-center justify-center font-bold text-sm">3</span>
+            <h3 class="font-bold text-base text-white">Ephemeral Schema Injection</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            When <code class="text-purple-300 font-mono">load_skill</code> is called, the transparent MCP protocol interceptor injects the selected tool's schema into the model's active toolset for that specific step with automated turn TTL expiry.
+          </p>
+        </div>
+
+        <div class="glass p-6 rounded-2xl">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-sm">4</span>
+            <h3 class="font-bold text-base text-white">Semantic Receipts & Drill-Down</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Heavy tool outputs are vaulted out-of-context and replaced with lightweight Semantic Receipts. The model uses <code class="text-purple-300 font-mono">inspect_receipt</code> to query specific fields without loading thousands of lines of JSON.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Enterprise & Monetization Section (Powered by Dodo Payments) -->
+  <section id="enterprise" class="py-20 border-t border-slate-900 bg-slate-900/40 relative">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-semibold mb-4">
+          <span>💼 Enterprise Solutions & B2B Infrastructure</span>
+        </div>
+        <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4">
+          Scale Enterprise AI Agents <br>
+          <span class="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+            Without Context Limits
+          </span>
+        </h2>
+        <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+          From turnkey custom MCP integrations to private fleet gateways and compliance sandboxing, empower your AI coding assistants with sub-millisecond precision.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <!-- Turnkey Custom MCP -->
+        <div class="glass-card p-8 rounded-3xl flex flex-col justify-between">
+          <div>
+            <div class="inline-block px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-4">
+              B2B SERVICE
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Turnkey Custom MCP</h3>
+            <div class="text-2xl font-black text-white mb-3">From $1,750 <span class="text-xs font-normal text-slate-400">/ project</span></div>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">
+              Bespoke private MCP servers for your internal CRM, databases, or proprietary APIs delivered production-ready in 5 days.
+            </p>
+            <ul class="text-xs text-slate-300 space-y-2 mb-8">
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> Full JSON-RPC protocol conformance</li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> SkillPrism progressive disclosure tagging</li>
+              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> AgentShield zero-leak audit passed</li>
+            </ul>
+          </div>
+          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjOJVkkh7Mryrzm6ro9" target="_blank" class="w-full text-center py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/30">
+            Book Starter ($1,750 via Dodo) →
+          </a>
+        </div>
+
+        <!-- Enterprise Skill Gateway -->
+        <div class="glass-card p-8 rounded-3xl border-purple-500/40 flex flex-col justify-between relative shadow-2xl shadow-purple-500/10">
+          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[10px] font-extrabold uppercase">
+            Popular Fleet Tier
+          </div>
+          <div>
+            <div class="inline-block px-3 py-1 rounded-lg bg-purple-500/10 text-purple-400 text-xs font-bold mb-4">
+              ENTERPRISE FLEET
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Private Skill Gateway</h3>
+            <div class="text-2xl font-black text-white mb-3">$49 <span class="text-xs font-normal text-slate-400">/ seat / mo</span></div>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">
+              Self-hosted or managed SkillPrism proxy gateway for engineering fleets using Claude Code, Cursor, and Windsurf.
+            </p>
+            <ul class="text-xs text-slate-300 space-y-2 mb-8">
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Role-Based Skill Authorization (RBAC)</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> SIEM Audit Logging (CEF / Syslog)</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Automatic 90%+ Token Cost Reduction</li>
+            </ul>
+          </div>
+          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONNytUpW7gzjoDlYW" target="_blank" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-purple-600/30">
+            Deploy Fleet Gateway (via Dodo) →
+          </a>
+        </div>
+
+        <!-- Verified Badging & Spotlight -->
+        <div class="glass-card p-8 rounded-3xl flex flex-col justify-between">
+          <div>
+            <div class="inline-block px-3 py-1 rounded-lg bg-pink-500/10 text-pink-400 text-xs font-bold mb-4">
+              COMMERCIAL REACH
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Verified Badging & Spotlight</h3>
+            <div class="text-2xl font-black text-white mb-3">$79 <span class="text-xs font-normal text-slate-400">/ tool</span></div>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">
+              Certify your MCP server with cryptographic audit verification and gain featured spotlight placement on DevShelf.
+            </p>
+            <ul class="text-xs text-slate-300 space-y-2 mb-8">
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Cryptographic HMAC verification</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Featured on DevShelf 520+ directory</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Priority search ranking in AI coding agents</li>
+            </ul>
+          </div>
+          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva" target="_blank" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/40 text-xs font-bold text-pink-300 transition-all">
+            Get Verified Badge (via Dodo) →
+          </a>
+        </div>
+      </div>
+
+      <!-- Enterprise Guarantee Bar -->
+      <div class="p-6 rounded-2xl glass text-center flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        <div class="flex items-center gap-3">
+          <span class="text-lg">🔒</span>
+          <span>Commercial billing & invoices globally processed by <strong>Dodo Payments</strong>. Need a custom MSA, NDA, or vendor onboarding?</span>
+        </div>
+        <a href="mailto:enterprise@ritualdev.in" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition-all shrink-0">
+          Contact Enterprise Sales →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Open Source Support & Donations (Cashfree) -->
+  <section class="py-16 border-t border-slate-900 bg-slate-950">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-pink-500/30 bg-pink-500/10 text-pink-300 text-xs font-semibold mb-4">
+        <span>💖 Open-Source Sustainability</span>
+      </div>
+      <h2 class="text-3xl font-extrabold mb-4">Support Independent AI Agent Research</h2>
+      <p class="text-slate-400 text-sm max-w-xl mx-auto mb-8">
+        SkillPrism is 100% free and open-source under Apache-2.0. Community contributions accelerate research on token optimization and context management.
+      </p>
+
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href="https://donation.rolenest.in" target="_blank" class="px-6 py-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold transition-all shadow-lg shadow-pink-600/30">
+          Donate via RoleNest (Cards, UPI) →
+        </a>
+        <a href="https://github.com/sponsors/RitualDev-Lab" target="_blank" class="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-purple-500/30 text-purple-300 text-xs font-bold transition-all">
+          Sponsor on GitHub →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 py-10 bg-slate-950 text-slate-500 text-xs">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        <p class="text-slate-400 font-medium">SkillPrism by RitualDev Lab</p>
+        <p class="mt-0.5">Apache-2.0 License © 2026</p>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="https://github.com/RitualDev-Lab/SkillPrism" class="hover:text-slate-300">GitHub</a>
+        <a href="https://donation.rolenest.in" class="hover:text-pink-400">Donate</a>
+        <a href="https://mcp.ritualdev.in" class="hover:text-slate-300">MCP Builder Kit</a>
+        <a href="https://agentshield.ritualdev.in" class="hover:text-slate-300">AgentShield</a>
+        <a href="https://devshelf.ritualdev.in" class="hover:text-slate-300">DevShelf</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

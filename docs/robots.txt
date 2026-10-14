@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://skillprism.ritualdev.in/sitemap.xml
