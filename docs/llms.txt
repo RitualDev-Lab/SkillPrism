@@ -1,0 +1,42 @@
+# SkillPrism
+> Progressive Skill Disclosure & Context Compaction Engine for Autonomous AI Coding Agents
+
+SkillPrism solves the tool-schema bloat and attention dilution problem for autonomous AI coding agents (Claude Code, Cursor, Windsurf, Codex, Antigravity) by indexing hundreds of MCP tool schemas out-of-context using Okapi BM25 and injecting full schemas just-in-time (JIT) on demand.
+
+Website: https://skillprism.ritualdev.in/
+Repository: https://github.com/RitualDev-Lab/SkillPrism
+Ecosystem Directory: https://devshelf.ritualdev.in/
+License: Apache-2.0
+Developer Contact: developer@ritualdev.in
+Support: support@ritualdev.in
+General Inquiries: contact@ritualdev.in
+
+## Quick Start CLI
+```bash
+# Search out-of-context skill registry by natural language intent
+npx @ritualdev-lab/skillprism search "query postgres database"
+
+# Run token optimization & latency benchmark
+npx @ritualdev-lab/skillprism benchmark
+
+# Sync 520+ verified community tools from DevShelf directory
+npx @ritualdev-lab/skillprism sync
+
+# Run transparent local MCP protocol interceptor
+npx @ritualdev-lab/skillprism proxy --port 8080
+```
+
+## Core Architecture & Capabilities
+- **Zero-State Meta-Tools**: Turn 1 prompt delivers only two lightweight meta-tools: `search_skills` and `load_skill`, reducing prompt weight by ~99.2% (down to ~199 tokens from 24,500+).
+- **Sub-Millisecond BM25 Search**: Sub-millisecond (< 0.1 ms) Okapi BM25 keyword, tag, and intent scoring over out-of-context skill catalogs.
+- **Just-In-Time (JIT) Dynamic Schema Injection**: Only the requested tool's schema is injected into the model's active toolset for that specific execution turn, with automatic TTL expiration.
+- **Dynamic Context Compactor & Semantic Receipts**: Large tool outputs (> 512 bytes) are vaulted out-of-context and replaced with lightweight semantic receipts (< 120 tokens).
+- **Receipt Inspection**: The model can invoke `inspect_receipt` to drill down into specific subfields and paths without reloading massive JSON objects.
+- **Vault TTL & Memory Protection**: Automatic 30-minute expiration for vaulted tool receipts prevents memory leaks and stale secret retention.
+- **Input Sanitization**: Ingestion filters strip prompt-injection escape sequences (`<>{}$` `) and length-cap third-party tool descriptions.
+- **Permission Enforcement**: Role-based access control (RBAC) validations enforce tool privileges before dispatch.
+
+## Ecosystem Integration
+- Works transparently with Claude Code, Cursor, Windsurf, Antigravity, and all JSON-RPC Model Context Protocol (MCP) clients.
+- Ingests catalogs directly from DevShelf (530+ verified zero-paywall developer tools) and standard MCP servers (`tools/list`).
+- Integrates with AgentShield for zero-leak secret redaction across tool parameters and execution receipts.
