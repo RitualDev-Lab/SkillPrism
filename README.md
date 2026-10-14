@@ -80,7 +80,11 @@ console.log(matches[0].disclosureSnippet);
   - Sub-millisecond keyword and tag affinity scoring
   - Native MCP `tools/list` schema importer
   - Token footprint estimation and savings telemetry
-- [ ] **Phase 2: JIT Meta-Tool Harness (`search_skills` & `load_skill`)**
+- [x] **Phase 2: JIT Meta-Tool Harness (`search_skills` & `load_skill`)**
+  - Zero-state prompt with only 2 lightweight meta-tools (< 180 tokens)
+  - Dynamic schema injection upon skill activation
+  - Turn-level TTL schema expiry and auto-pruning
+  - Compatible with OpenAI Function Calling & Anthropic Tool Use format
 - [ ] **Phase 3: Ephemeral Schema Injection & Turn-Level Middleware Proxy**
 - [ ] **Phase 4: Dynamic Context Compactor & Semantic Receipt Garbage Collector (GC)**
 - [ ] **Phase 5: CLI, Benchmarking Suite & DevShelf Directory Sync**
