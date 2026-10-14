@@ -80,9 +80,13 @@ jobs:
         run: pnpm run build
 
       - name: Publish to npm
-        if: ${{ secrets.NPM_TOKEN != '' }}
         run: |
-          pnpm publish --no-git-checks --access public
+          if [ -n "${NPM_TOKEN}" ]; then
+            pnpm publish --no-git-checks --access public
+          else
+            echo "NPM_TOKEN is not configured, skipping npm registry publish."
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
