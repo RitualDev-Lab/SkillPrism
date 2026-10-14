@@ -78,16 +78,14 @@
         </span>
       </div>
 
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+      <div class="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300">
         <a href="#benchmark" class="hover:text-purple-400 transition-colors">Benchmarks</a>
         <a href="#how-it-works" class="hover:text-purple-400 transition-colors">How It Works</a>
-        <a href="#enterprise" class="hover:text-indigo-400 transition-colors flex items-center gap-1 font-semibold text-indigo-300">
-          <span>💼</span> Enterprise
-        </a>
-        <a href="https://donation.rolenest.in" target="_blank" class="hover:text-pink-400 transition-colors flex items-center gap-1">
-          <span>💖</span> Support / Donate
-        </a>
-        <a href="https://devshelf.ritualdev.in" target="_blank" class="hover:text-purple-400 transition-colors">DevShelf Hub</a>
+        <a href="#enterprise" class="hover:text-indigo-400 transition-colors font-semibold text-indigo-300">Enterprise</a>
+        <span class="text-slate-700">|</span>
+        <a href="https://devshelf.ritualdev.in" target="_blank" class="hover:text-amber-400 transition-colors">DevShelf</a>
+        <a href="https://agentshield.ritualdev.in" target="_blank" class="hover:text-emerald-400 transition-colors">AgentShield</a>
+        <a href="https://mcp.ritualdev.in" target="_blank" class="hover:text-indigo-400 transition-colors">MCP Kit</a>
       </div>
 
       <div class="flex items-center gap-3">
@@ -233,73 +231,99 @@
         </p>
       </div>
 
-      <div class="grid md:grid-cols-3 gap-8 mb-12">
-        <!-- Turnkey Custom MCP -->
-        <div class="glass-card p-8 rounded-3xl flex flex-col justify-between">
+      <div class="grid md:grid-cols-4 gap-6 mb-12">
+        <!-- Tier 1: Free Community OSS -->
+        <div class="glass-card p-6 rounded-3xl flex flex-col justify-between">
           <div>
-            <div class="inline-block px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-4">
-              B2B SERVICE
+            <div class="inline-block px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold mb-4">
+              OPEN SOURCE
             </div>
-            <h3 class="text-xl font-bold text-white mb-2">Turnkey Custom MCP</h3>
-            <div class="text-2xl font-black text-white mb-3">From $1,750 <span class="text-xs font-normal text-slate-400">/ project</span></div>
+            <h3 class="text-xl font-bold text-white mb-2">Community OSS</h3>
+            <div class="text-3xl font-black text-white mb-3">$0 <span class="text-xs font-normal text-slate-400">/ forever</span></div>
             <p class="text-xs text-slate-400 leading-relaxed mb-6">
-              Bespoke private MCP servers for your internal CRM, databases, or proprietary APIs delivered production-ready in 5 days.
+              Full local engine for solo developers. Zero prompt bloat, out-of-context BM25 search, and semantic receipts.
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
-              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> Full JSON-RPC protocol conformance</li>
-              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> SkillPrism progressive disclosure tagging</li>
-              <li class="flex items-center gap-2"><span class="text-indigo-400">✓</span> AgentShield zero-leak audit passed</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Full Apache-2.0 Local Engine</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Up to 500 skills indexable</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Local CLI & MCP Interceptor</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Semantic Receipt GC</li>
             </ul>
           </div>
-          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjOJVkkh7Mryrzm6ro9" target="_blank" class="w-full text-center py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-indigo-600/30">
-            Book Starter ($1,750 via Dodo) →
+          <a href="#quickstart" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-all border border-slate-700">
+            Get Started Free →
           </a>
         </div>
 
-        <!-- Enterprise Skill Gateway -->
-        <div class="glass-card p-8 rounded-3xl border-purple-500/40 flex flex-col justify-between relative shadow-2xl shadow-purple-500/10">
-          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[10px] font-extrabold uppercase">
-            Popular Fleet Tier
+        <!-- Tier 2: Developer Pro License -->
+        <div class="glass-card p-6 rounded-3xl flex flex-col justify-between">
+          <div>
+            <div class="inline-block px-3 py-1 rounded-lg bg-blue-500/10 text-blue-400 text-xs font-bold mb-4">
+              PRO DEVELOPER
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Developer Pro</h3>
+            <div class="text-3xl font-black text-white mb-3">$49 <span class="text-xs font-normal text-slate-400">/ lifetime</span></div>
+            <p class="text-xs text-slate-400 leading-relaxed mb-6">
+              For professional developers & power users running autonomous agents on large enterprise codebases.
+            </p>
+            <ul class="text-xs text-slate-300 space-y-2 mb-8">
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Unlimited skills & tool schemas</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Hybrid BM25 + Vector embedding search</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Verified MCP Registry sync</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Priority Discord support</li>
+            </ul>
+          </div>
+          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjOJVkkh7Mryrzm6ro9" target="_blank" class="w-full text-center py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-all shadow-lg shadow-blue-600/30">
+            Buy Pro License ($49) →
+          </a>
+        </div>
+
+        <!-- Tier 3: Enterprise Fleet Gateway -->
+        <div class="glass-card p-6 rounded-3xl border-purple-500/40 flex flex-col justify-between relative shadow-2xl shadow-purple-500/10">
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[10px] font-extrabold uppercase tracking-wide">
+            Popular Fleet
           </div>
           <div>
             <div class="inline-block px-3 py-1 rounded-lg bg-purple-500/10 text-purple-400 text-xs font-bold mb-4">
-              ENTERPRISE FLEET
+              ENTERPRISE
             </div>
-            <h3 class="text-xl font-bold text-white mb-2">Private Skill Gateway</h3>
-            <div class="text-2xl font-black text-white mb-3">$49 <span class="text-xs font-normal text-slate-400">/ seat / mo</span></div>
+            <h3 class="text-xl font-bold text-white mb-2">Private Gateway</h3>
+            <div class="text-3xl font-black text-white mb-3">$499 <span class="text-xs font-normal text-slate-400">/ node / mo</span></div>
             <p class="text-xs text-slate-400 leading-relaxed mb-6">
-              Self-hosted or managed SkillPrism proxy gateway for engineering fleets using Claude Code, Cursor, and Windsurf.
+              Centralized self-hosted or managed gateway for corporate engineering fleets (Claude Code, Cursor, Windsurf).
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Role-Based Skill Authorization (RBAC)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> SIEM Audit Logging (CEF / Syslog)</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Automatic 90%+ Token Cost Reduction</li>
+              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> Role-Based Skill Authorization (RBAC)</li>
+              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> SIEM Audit Logging (CEF / Syslog)</li>
+              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> AgentShield zero-leak integration</li>
+              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> 96.7% Token fleet savings</li>
             </ul>
           </div>
           <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONNytUpW7gzjoDlYW" target="_blank" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-purple-600/30">
-            Deploy Fleet Gateway (via Dodo) →
+            Deploy Node ($499 via Dodo) →
           </a>
         </div>
 
-        <!-- Verified Badging & Spotlight -->
-        <div class="glass-card p-8 rounded-3xl flex flex-col justify-between">
+        <!-- Tier 4: Custom Turnkey Architecture -->
+        <div class="glass-card p-6 rounded-3xl flex flex-col justify-between">
           <div>
             <div class="inline-block px-3 py-1 rounded-lg bg-pink-500/10 text-pink-400 text-xs font-bold mb-4">
-              COMMERCIAL REACH
+              CUSTOM ENGINEERING
             </div>
-            <h3 class="text-xl font-bold text-white mb-2">Verified Badging & Spotlight</h3>
-            <div class="text-2xl font-black text-white mb-3">$79 <span class="text-xs font-normal text-slate-400">/ tool</span></div>
+            <h3 class="text-xl font-bold text-white mb-2">Turnkey Custom</h3>
+            <div class="text-3xl font-black text-white mb-3">$2,499 <span class="text-xs font-normal text-slate-400">/ project</span></div>
             <p class="text-xs text-slate-400 leading-relaxed mb-6">
-              Certify your MCP server with cryptographic audit verification and gain featured spotlight placement on DevShelf.
+              Full-service bespoke MCP server development and progressive disclosure pipeline for internal enterprise systems.
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
-              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Cryptographic HMAC verification</li>
-              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Featured on DevShelf 520+ directory</li>
-              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Priority search ranking in AI coding agents</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Turnkey custom MCP build & delivery</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Dedicated solution engineer (5 days)</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Verified Security Audit & SLSA 3</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Executive architecture brief</li>
             </ul>
           </div>
           <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva" target="_blank" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/40 text-xs font-bold text-pink-300 transition-all">
-            Get Verified Badge (via Dodo) →
+            Book Turnkey Build →
           </a>
         </div>
       </div>
