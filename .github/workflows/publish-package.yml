@@ -41,15 +41,13 @@ jobs:
         run: pnpm run build
 
       - name: Publish to GitHub Packages
-        continue-on-error: true
         run: |
-          node -e "const pkg = require('./package.json'); pkg.name = '@ritualdev-lab/skillprism'; pkg.publishConfig = { registry: 'https://npm.pkg.github.com' }; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');"
-          echo "@ritualdev-lab:registry=https://npm.pkg.github.com" > .npmrc
-          echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
-          npm publish
+          npm config set //npm.pkg.github.com/:_authToken "${GITHUB_TOKEN}"
+          npm publish --registry=https://npm.pkg.github.com
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   publish-npm:
     name: Publish to npm Registry
