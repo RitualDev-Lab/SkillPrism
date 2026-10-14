@@ -39,19 +39,25 @@ export interface CompactorStats {
  * 3. Provides an `inspect_receipt` query helper for the model to fetch specific fields on demand.
  */
 export class ContextCompactor {
-  private vault: Map<string, any> = new Map();
+  private vault: Map<string, { data: any; createdAt: number; expiresAt: number }> = new Map();
   private maxByteThreshold: number;
+  private defaultTtlMs: number;
   private totalRawBytesCompacted = 0;
   private totalTokensSaved = 0;
 
-  constructor(maxByteThreshold = 512) {
+  constructor(maxByteThreshold = 512, defaultTtlMs = 1000 * 60 * 30) {
     this.maxByteThreshold = maxByteThreshold;
+    this.defaultTtlMs = defaultTtlMs;
   }
 
   /**
    * Compacts raw execution output if it exceeds maxByteThreshold
    */
-  public compact(toolName: string, rawData: any): { isCompacted: boolean; output: any; receipt?: SemanticReceipt } {
+  public compact(
+    toolName: string,
+    rawData: any,
+    ttlMs?: number
+  ): { isCompacted: boolean; output: any; receipt?: SemanticReceipt } {
     const rawString = typeof rawData === "string" ? rawData : JSON.stringify(rawData);
     const byteSize = Buffer.byteLength(rawString, "utf8");
 
@@ -64,8 +70,10 @@ export class ContextCompactor {
     const hash = createHash("sha256").update(rawString).digest("hex").slice(0, 12);
     const ref = `receipt:${toolName}:${hash}`;
 
-    // Store raw object out-of-context in vault
-    this.vault.set(ref, rawData);
+    // Store raw object out-of-context in vault with expiry
+    const now = Date.now();
+    const expiry = now + (ttlMs || this.defaultTtlMs);
+    this.vault.set(ref, { data: rawData, createdAt: now, expiresAt: expiry });
 
     // Extract high-value summary and scalar fields
     const { summary, keyFields } = this.extractSemanticSummary(toolName, rawData);
@@ -101,14 +109,24 @@ export class ContextCompactor {
    * Model tool to inspect or drill down into specific keys of a compacted receipt
    */
   public inspectReceipt(ref: string, path?: string): { success: boolean; data?: any; error?: string } {
-    if (!this.vault.has(ref)) {
+    const entry = this.vault.get(ref);
+    if (!entry) {
       return {
         success: false,
         error: `Receipt '${ref}' was not found in the compaction vault or has expired.`,
       };
     }
 
-    const fullData = this.vault.get(ref);
+    // Check expiry
+    if (Date.now() > entry.expiresAt) {
+      this.vault.delete(ref);
+      return {
+        success: false,
+        error: `Receipt '${ref}' has expired and was purged from out-of-context storage.`,
+      };
+    }
+
+    const fullData = entry.data;
 
     if (!path) {
       return { success: true, data: fullData };
@@ -129,16 +147,20 @@ export class ContextCompactor {
   }
 
   /**
-   * Purge old receipts from out-of-context memory (Garbage Collection)
+   * Purge old or expired receipts from out-of-context memory (Garbage Collection)
    */
   public gc(olderThanMs?: number): number {
-    if (!olderThanMs) {
-      const count = this.vault.size;
-      this.vault.clear();
-      return count;
+    const now = Date.now();
+    let purged = 0;
+
+    for (const [ref, entry] of this.vault.entries()) {
+      if (now > entry.expiresAt || (olderThanMs && now - entry.createdAt > olderThanMs)) {
+        this.vault.delete(ref);
+        purged++;
+      }
     }
-    // Optional selective TTL cleanup can be added here
-    return 0;
+
+    return purged;
   }
 
   /**

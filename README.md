@@ -5,7 +5,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@ritualdev-lab/skillprism?color=8b5cf6&style=flat-square)](https://www.npmjs.com/package/@ritualdev-lab/skillprism)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-100%25_Passing-emerald.svg?style=flat-square)](#)
+<a href="https://github.com/RitualDev-Lab/SkillPrism/actions/workflows/test.yml"><img src="https://github.com/RitualDev-Lab/SkillPrism/actions/workflows/test.yml/badge.svg" alt="CI Tests" /></a>
 [![Secured by AgentShield](https://img.shields.io/badge/Secured%20by-AgentShield%20Zero--Leak-8b5cf6?logo=shield&logoColor=white&style=flat-square)](https://agentshield.ritualdev.in/)
 
 ---
@@ -13,7 +13,7 @@
 ## ⚡ The Problem: Context Bloat & Attention Dilution
 
 When autonomous coding agents (Claude Code, Cursor, Windsurf, Antigravity) connect to enterprise MCP servers or large API catalogs:
-* **25,000+ Tokens Wasted**: Full JSON schemas for hundreds of endpoints are dumped into the system prompt on turn 1.
+* **~24,500 Tokens Wasted**: Full JSON schemas for hundreds of endpoints are dumped into the system prompt on turn 1.
 * **Model Hallucinations**: When models face 100+ tools, tool selection accuracy drops dramatically ("Lost in the Middle").
 * **Token Cost Explosion**: Every reasoning turn repeatedly transmits schemas the agent never touches.
 
@@ -22,8 +22,8 @@ When autonomous coding agents (Claude Code, Cursor, Windsurf, Antigravity) conne
 ## 💡 The Solution: SkillPrism Progressive JIT Disclosure
 
 SkillPrism moves the entire tool catalog **outside the LLM context**:
-1. **Zero-State (< 180 tokens)**: The agent prompt starts with only two meta-tools: `search_skills` and `load_skill`.
-2. **Sub-Millisecond BM25 Hybrid Search**: The agent queries for capabilities by natural intent (e.g. *"query Postgres database"*).
+1. **Zero-State (~199 tokens)**: The agent prompt starts with only two meta-tools: `search_skills` and `load_skill`.
+2. **Sub-Millisecond BM25 Hybrid Search (< 0.1 ms)**: The agent queries for capabilities by natural intent (e.g. *"query Postgres database"*).
 3. **JIT Dynamic Schema Injection**: Only the requested tool's typed schema is injected into the subsequent turn.
 4. **Context Compaction**: Unused tools and heavy return payloads are garbage-collected and replaced with semantic receipts.
 

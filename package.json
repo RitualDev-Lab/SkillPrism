@@ -14,6 +14,9 @@
     "LICENSE",
     "SKILL.md"
   ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RitualDev-Lab/SkillPrism.git"
@@ -42,7 +45,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "prepublishOnly": "pnpm run build && pnpm test",
     "lint": "biome lint .",
     "format": "biome format --write ."
   },

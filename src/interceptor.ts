@@ -192,6 +192,22 @@ export class McpProtocolInterceptor {
           };
         }
 
+        // Permission enforcement check (if skill declares permissions)
+        if (skill.permissions && skill.permissions.length > 0) {
+          const grantedPermissions = (params?._permissions || []) as string[];
+          const missing = skill.permissions.filter((p) => !grantedPermissions.includes(p) && !grantedPermissions.includes("*"));
+          if (missing.length > 0 && process.env.SKILLPRISM_ENFORCE_PERMISSIONS === "true") {
+            return {
+              jsonrpc: "2.0",
+              id,
+              error: {
+                code: -32003,
+                message: `Permission Denied: Execution of '${toolName}' requires permissions [${missing.join(", ")}].`,
+              },
+            };
+          }
+        }
+
         if (this.upstreamExecutor) {
           const rawOutput = await this.upstreamExecutor(toolName, toolArgs);
           const { output } = this.compactor.compact(toolName, rawOutput);

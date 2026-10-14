@@ -102,6 +102,7 @@ export class SkillIndex {
 
   /**
    * Import tools from standard Model Context Protocol (MCP) tools/list response
+   * Includes prompt injection sanitization, tag bounding, and description length capping.
    */
   public importFromMcp(toolsList: Array<{ name: string; description?: string; inputSchema?: any }>): number {
     let count = 0;
@@ -111,21 +112,34 @@ export class SkillIndex {
       const required = tool.inputSchema?.required || [];
 
       for (const [propName, propDef] of Object.entries<any>(properties)) {
+        // Sanitize parameter descriptions and cap length to prevent injection payloads
+        const cleanParamDesc = (propDef.description || "")
+          .replace(/[<>{}`$]/g, "")
+          .slice(0, 160)
+          .trim();
+
         parameters.push({
           name: propName,
           type: propDef.type || "string",
-          description: propDef.description || "",
+          description: cleanParamDesc,
           required: required.includes(propName),
         });
       }
 
+      // Sanitize tool name and descriptions against prompt poisoning
+      const safeName = tool.name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+      const rawDesc = tool.description || `Tool: ${safeName}`;
+      // Strip control / template escape characters and cap description length
+      const cleanDesc = rawDesc.replace(/[<>{}`$]/g, "").slice(0, 300).trim();
+      const cleanSummary = cleanDesc.slice(0, 120);
+
       this.register({
-        id: tool.name,
-        name: tool.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
-        summary: tool.description?.slice(0, 120) || `Executes ${tool.name}`,
-        description: tool.description || `Tool: ${tool.name}`,
+        id: safeName,
+        name: safeName.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        summary: cleanSummary || `Executes ${safeName}`,
+        description: cleanDesc,
         category: "general",
-        tags: [tool.name, "mcp-tool"],
+        tags: [safeName, "mcp-tool"],
         parameters,
         rawSchema: tool.inputSchema,
       });

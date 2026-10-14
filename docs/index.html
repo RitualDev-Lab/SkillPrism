@@ -5,6 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SkillPrism — Progressive Skill Disclosure & Context Compaction Engine</title>
   <meta name="description" content="Stop preloading 200+ tool schemas. SkillPrism indexes skills out-of-context, injects only what the model needs JIT, and compacts return context by 91%.">
+  <link rel="canonical" href="https://ritualdev-lab.github.io/SkillPrism/">
+
+  <!-- OpenGraph Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SkillPrism — Progressive Skill Disclosure & Context Compaction Engine">
+  <meta property="og:description" content="Stop preloading 200+ tool schemas. SkillPrism indexes skills out-of-context, injects only what the model needs JIT, and compacts return context by 91%.">
+  <meta property="og:url" content="https://ritualdev-lab.github.io/SkillPrism/">
+  <meta property="og:site_name" content="SkillPrism">
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SkillPrism — Progressive Skill Disclosure & Context Compaction Engine">
+  <meta name="twitter:description" content="Stop preloading 200+ tool schemas. SkillPrism indexes skills out-of-context, injects only what the model needs JIT, and compacts return context by 91%.">
 
   <!-- Tailwind CSS CDN & Custom Font -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -74,7 +87,7 @@
           SkillPrism
         </span>
         <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-          v0.1.0
+          v1.1.1
         </span>
       </div>
 
@@ -104,7 +117,7 @@
   <header class="pt-32 pb-20 px-6 max-w-5xl mx-auto text-center relative">
     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-300 text-xs font-semibold mb-8">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      <span>Official Model Context Protocol (2024-11-05) JIT Gateway</span>
+      <span>Model Context Protocol (MCP) Compatible JIT Gateway</span>
     </div>
 
     <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-tight mb-6">
@@ -245,9 +258,9 @@
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
               <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Full Apache-2.0 Local Engine</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Up to 500 skills indexable</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Local CLI & MCP Interceptor</li>
-              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Semantic Receipt GC</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Out-of-context BM25 catalog</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Local CLI &amp; MCP Interceptor</li>
+              <li class="flex items-center gap-2"><span class="text-emerald-400">✓</span> Semantic Receipt GC &amp; TTL Expiry</li>
             </ul>
           </div>
           <a href="#quickstart" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition-all border border-slate-700">
@@ -264,17 +277,17 @@
             <h3 class="text-xl font-bold text-white mb-2">Developer Pro</h3>
             <div class="text-3xl font-black text-white mb-3">$49 <span class="text-xs font-normal text-slate-400">/ lifetime</span></div>
             <p class="text-xs text-slate-400 leading-relaxed mb-6">
-              For professional developers & power users running autonomous agents on large enterprise codebases.
+              For professional developers &amp; power users running autonomous agents on large enterprise codebases.
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
-              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Unlimited skills & tool schemas</li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Hybrid BM25 + Vector embedding search</li>
-              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Verified MCP Registry sync</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Unlimited local skills &amp; schemas</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> DevShelf 520+ tool directory sync</li>
+              <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Prompt injection sanitization filter</li>
               <li class="flex items-center gap-2"><span class="text-blue-400">✓</span> Priority Discord support</li>
             </ul>
           </div>
-          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjOJVkkh7Mryrzm6ro9" target="_blank" class="w-full text-center py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-all shadow-lg shadow-blue-600/30">
-            Buy Pro License ($49) →
+          <a href="mailto:sales@ritualdev.in?subject=SkillPrism%20Developer%20Pro%20License" class="w-full text-center py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition-all shadow-lg shadow-blue-600/30">
+            Inquire for Pro ($49) →
           </a>
         </div>
 
@@ -296,11 +309,11 @@
               <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> Role-Based Skill Authorization (RBAC)</li>
               <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> SIEM Audit Logging (CEF / Syslog)</li>
               <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> AgentShield zero-leak integration</li>
-              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> 96.7% Token fleet savings</li>
+              <li class="flex items-center gap-2"><span class="text-purple-400">✓</span> 99.2% Upfront token savings</li>
             </ul>
           </div>
-          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONNytUpW7gzjoDlYW" target="_blank" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-purple-600/30">
-            Deploy Node ($499 via Dodo) →
+          <a href="mailto:enterprise@ritualdev.in?subject=SkillPrism%20Private%20Gateway%20Node" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-xs font-bold text-white transition-all shadow-lg shadow-purple-600/30">
+            Contact Fleet Sales ($499/mo) →
           </a>
         </div>
 
@@ -316,13 +329,13 @@
               Full-service bespoke MCP server development and progressive disclosure pipeline for internal enterprise systems.
             </p>
             <ul class="text-xs text-slate-300 space-y-2 mb-8">
-              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Turnkey custom MCP build & delivery</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Turnkey custom MCP build &amp; delivery</li>
               <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Dedicated solution engineer (5 days)</li>
-              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Verified Security Audit & SLSA 3</li>
+              <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Verified Security Audit &amp; Isolation</li>
               <li class="flex items-center gap-2"><span class="text-pink-400">✓</span> Executive architecture brief</li>
             </ul>
           </div>
-          <a href="https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva" target="_blank" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/40 text-xs font-bold text-pink-300 transition-all">
+          <a href="mailto:enterprise@ritualdev.in?subject=SkillPrism%20Turnkey%20Custom%20Build" class="w-full text-center py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-pink-500/40 text-xs font-bold text-pink-300 transition-all">
             Book Turnkey Build →
           </a>
         </div>
