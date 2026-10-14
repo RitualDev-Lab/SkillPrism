@@ -1,0 +1,56 @@
+{
+  "name": "@ritualdev-lab/skillprism",
+  "version": "0.1.0",
+  "description": "Progressive Skill Disclosure & Context Compaction Engine for Autonomous AI Coding Agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "skillprism": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SKILL.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RitualDev-Lab/SkillPrism.git"
+  },
+  "homepage": "https://github.com/RitualDev-Lab/SkillPrism#readme",
+  "bugs": {
+    "url": "https://github.com/RitualDev-Lab/SkillPrism/issues"
+  },
+  "keywords": [
+    "ai-agents",
+    "mcp",
+    "model-context-protocol",
+    "context-window",
+    "token-optimization",
+    "progressive-disclosure",
+    "claude-code",
+    "cursor",
+    "bm25",
+    "vector-search"
+  ],
+  "author": "RitualDev Lab (https://github.com/RitualDev-Lab)",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "tsx --test tests/**/*.test.ts",
+    "lint": "biome lint .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.1",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
