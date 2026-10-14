@@ -4,3 +4,5 @@ export * from "./index-store.js";
 export * from "./harness.js";
 export * from "./interceptor.js";
 export * from "./compactor.js";
+export * from "./devshelf-sync.js";
+export * from "./benchmark.js";

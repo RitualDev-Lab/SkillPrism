@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { BenchmarkEngine } from "./benchmark.js";
+import { DevShelfSync } from "./devshelf-sync.js";
 import { SkillIndex } from "./index-store.js";
 import type { SkillDefinition } from "./types.js";
 
@@ -79,6 +81,20 @@ async function main() {
       console.log(`   Summary: ${r.skill.summary}`);
       console.log(`   Tokens: ~${r.skill.tokenCostEstimate} tokens saved from zero-state\n`);
     }
+  } else if (command === "benchmark") {
+    console.log("\n⚡ Running SkillPrism Token Optimization & Latency Benchmark...\n");
+    const metrics = BenchmarkEngine.runComparison(sampleSkills);
+    console.log(`📦 Catalog Size: ${metrics.catalogSize} tools`);
+    console.log(`🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`);
+    console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
+    console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
+    console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
+    console.log(`💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`);
+  } else if (command === "sync") {
+    console.log("\n🌐 Syncing 520+ DevShelf Catalog Tools into Out-of-Context Index...\n");
+    const res = await DevShelfSync.syncToCatalog(index);
+    console.log(`✅ Successfully synced ${res.totalSynced} tools from DevShelf directory!`);
+    console.log("📊 Categories ingested:", res.categories);
   } else if (command === "stats") {
     const stats = index.getStats();
     console.log("\n📊 SkillPrism Index Telemetry:");
@@ -86,9 +102,17 @@ async function main() {
   } else {
     console.log(`
 📚 SkillPrism v0.1.0 — Progressive Skill Disclosure Engine
-Usage:
-  skillprism search <intent>    Search out-of-context tool index
+
+USAGE:
+  skillprism search <intent>    Search out-of-context tool index by intent
+  skillprism benchmark          Run comparative token savings & latency benchmark
+  skillprism sync               Ingest 520+ tools from DevShelf public directory
   skillprism stats              Inspect catalog token savings and metrics
+
+EXAMPLES:
+  $ npx @ritualdev-lab/skillprism search "upload file to s3"
+  $ npx @ritualdev-lab/skillprism benchmark
+  $ npx @ritualdev-lab/skillprism sync
 `);
   }
 }
