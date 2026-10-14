@@ -85,7 +85,11 @@ console.log(matches[0].disclosureSnippet);
   - Dynamic schema injection upon skill activation
   - Turn-level TTL schema expiry and auto-pruning
   - Compatible with OpenAI Function Calling & Anthropic Tool Use format
-- [ ] **Phase 3: Ephemeral Schema Injection & Turn-Level Middleware Proxy**
+- [x] **Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor**
+  - Transparent JSON-RPC 2.0 proxy middleware
+  - Intercepts `tools/list` to hide out-of-context tools until dynamically loaded
+  - Intercepts `tools/call` for zero-friction routing between meta-tools and upstream handlers
+  - Full Model Context Protocol (2024-11-05) handshake conformance
 - [ ] **Phase 4: Dynamic Context Compactor & Semantic Receipt Garbage Collector (GC)**
 - [ ] **Phase 5: CLI, Benchmarking Suite & DevShelf Directory Sync**
 
