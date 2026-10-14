@@ -73,36 +73,6 @@ console.log(matches[0].disclosureSnippet);
 
 ---
 
-## 🗺️ Roadmap: The 5 Phases
-
-- [x] **Phase 1: Out-of-Context Skill Index & Local BM25/Vector Catalog**
-  - Ultra-fast Okapi BM25 ranking engine
-  - Sub-millisecond keyword and tag affinity scoring
-  - Native MCP `tools/list` schema importer
-  - Token footprint estimation and savings telemetry
-- [x] **Phase 2: JIT Meta-Tool Harness (`search_skills` & `load_skill`)**
-  - Zero-state prompt with only 2 lightweight meta-tools (< 180 tokens)
-  - Dynamic schema injection upon skill activation
-  - Turn-level TTL schema expiry and auto-pruning
-  - Compatible with OpenAI Function Calling & Anthropic Tool Use format
-- [x] **Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor**
-  - Transparent JSON-RPC 2.0 proxy middleware
-  - Intercepts `tools/list` to hide out-of-context tools until dynamically loaded
-  - Intercepts `tools/call` for zero-friction routing between meta-tools and upstream handlers
-  - Full Model Context Protocol (2024-11-05) handshake conformance
-- [x] **Phase 4: Dynamic Context Compactor & Semantic Receipt Garbage Collector (GC)**
-  - Automatically compacts payloads exceeding threshold into lightweight Semantic Receipts (< 120 tokens)
-  - Stores heavy raw data out-of-context in secure memory vault
-  - Provides `inspect_receipt` query helper for targeted path lookup (e.g. `nodes[1].memory`)
-  - Prevents multi-turn token drift and saves 70% to 85% of execution return tokens
-- [x] **Phase 5: CLI, Benchmarking Suite & DevShelf Directory Sync**
-  - Interactive CLI (`search`, `benchmark`, `sync`, `stats`)
-  - Quantified token savings & latency benchmark (`skillprism benchmark`)
-  - Dogfoods 520+ verified developer tools from the DevShelf ecosystem directory (`skillprism sync`)
-  - Sub-millisecond BM25 keyword matching (< 0.1 ms average search latency)
-
----
-
 ## 📊 Live Benchmark Results
 
 ```text
