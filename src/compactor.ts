@@ -42,12 +42,35 @@ export class ContextCompactor {
   private vault: Map<string, { data: any; createdAt: number; expiresAt: number }> = new Map();
   private maxByteThreshold: number;
   private defaultTtlMs: number;
+  private maxVaultEntries: number;
   private totalRawBytesCompacted = 0;
   private totalTokensSaved = 0;
 
-  constructor(maxByteThreshold = 512, defaultTtlMs = 1000 * 60 * 30) {
+  constructor(maxByteThreshold = 512, defaultTtlMs = 1000 * 60 * 30, maxVaultEntries = 500) {
     this.maxByteThreshold = maxByteThreshold;
     this.defaultTtlMs = defaultTtlMs;
+    this.maxVaultEntries = maxVaultEntries;
+  }
+
+  /**
+   * Safely stringifies arbitrary input without throwing on circular refs or undefined
+   */
+  private safeStringify(data: any): string {
+    if (data === undefined) return "undefined";
+    if (data === null) return "null";
+    if (typeof data === "string") return data;
+    try {
+      const seen = new WeakSet();
+      return JSON.stringify(data, (_key, value) => {
+        if (typeof value === "object" && value !== null) {
+          if (seen.has(value)) return "[Circular Reference]";
+          seen.add(value);
+        }
+        return value;
+      });
+    } catch {
+      return String(data);
+    }
   }
 
   /**
@@ -58,12 +81,21 @@ export class ContextCompactor {
     rawData: any,
     ttlMs?: number
   ): { isCompacted: boolean; output: any; receipt?: SemanticReceipt } {
-    const rawString = typeof rawData === "string" ? rawData : JSON.stringify(rawData);
+    // Opportunistic automatic GC to keep memory bounded
+    this.gc();
+
+    const rawString = this.safeStringify(rawData);
     const byteSize = Buffer.byteLength(rawString, "utf8");
 
     // If small enough, no compaction needed
     if (byteSize <= this.maxByteThreshold) {
       return { isCompacted: false, output: rawData };
+    }
+
+    // Evict oldest entry if vault capacity reached
+    if (this.vault.size >= this.maxVaultEntries) {
+      const oldestKey = this.vault.keys().next().value;
+      if (oldestKey) this.vault.delete(oldestKey);
     }
 
     // Generate cryptographic hash reference

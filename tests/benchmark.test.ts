@@ -45,10 +45,26 @@ describe("Phase 5: CLI, Benchmarking Suite & DevShelf Dogfooding Suite", () => {
     },
   ];
 
+  // Extend with representative enterprise tool catalog
+  for (let i = 5; i <= 20; i++) {
+    catalog.push({
+      id: `service_tool_${i}`,
+      name: `Enterprise Integration Tool ${i}`,
+      summary: `Automates subsystem operations for enterprise service ${i}`,
+      description: `Dispatches authenticated RPC calls and queries to cloud service ${i}.`,
+      category: "cloud",
+      tags: ["cloud", `service_${i}`],
+      parameters: [
+        { name: "resourceId", type: "string", description: "Target resource ID", required: true },
+        { name: "payload", type: "object", description: "JSON payload options" },
+      ],
+    });
+  }
+
   test("BenchmarkEngine quantifies token savings and sub-millisecond search latency", () => {
     const metrics = BenchmarkEngine.runComparison(catalog);
 
-    assert.equal(metrics.catalogSize, 4);
+    assert.equal(metrics.catalogSize, 20);
     assert.ok(metrics.unoptimizedZeroStateTokens > metrics.skillPrismZeroStateTokens);
     assert.ok(metrics.tokenSavingsPercentage > 0);
     assert.ok(metrics.searchLatencyMs >= 0);

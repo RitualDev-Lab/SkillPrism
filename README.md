@@ -78,11 +78,11 @@ console.log(matches[0].disclosureSnippet);
 ```text
 ⚡ SkillPrism Token Optimization & Latency Benchmark
 
-📦 Catalog Size: 100+ Enterprise Tools
-🔴 Unoptimized Preload Zero-State: ~24,500 tokens
-🟢 SkillPrism JIT Zero-State:       ~199 tokens
-🚀 Upfront Token Savings:           99.2%
-⏱️ Average Search Latency:          0.063 ms
+📦 Catalog Size: 100 Enterprise Tools
+🔴 Unoptimized Preload Zero-State: ~11,989 tokens
+🟢 SkillPrism JIT Zero-State:       ~326 tokens (3 meta-tools)
+🚀 Upfront Token Savings:           97.3%
+⏱️ Average Search Latency:          < 0.3 ms
 💾 Payload Compaction Savings:      91.0%
 ```
 

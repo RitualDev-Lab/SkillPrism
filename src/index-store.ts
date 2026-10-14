@@ -14,27 +14,34 @@ export class SkillIndex {
    * Register a new skill into the out-of-context catalog
    */
   public register(skill: SkillDefinition): void {
-    // Estimate token weight if not provided
-    if (!skill.tokenCostEstimate) {
-      const rawText = JSON.stringify(skill);
-      skill.tokenCostEstimate = Math.ceil(rawText.length / 3.8);
+    // Clone to avoid mutating caller object
+    const storedSkill: SkillDefinition = {
+      ...skill,
+      tags: skill.tags || [],
+      permissions: skill.permissions || [],
+      parameters: skill.parameters || [],
+    };
+
+    if (!storedSkill.tokenCostEstimate) {
+      const rawText = JSON.stringify(storedSkill);
+      storedSkill.tokenCostEstimate = Math.ceil(rawText.length / 3.8);
     }
 
-    this.skills.set(skill.id, skill);
+    this.skills.set(storedSkill.id, storedSkill);
 
     // Build searchable document text prioritizing name, tags, summary, and parameters
     const searchableContent = [
-      skill.name,
-      skill.id,
-      skill.summary,
-      skill.description,
-      skill.category,
-      ...(skill.tags || []),
-      ...(skill.permissions || []),
-      ...skill.parameters.map((p) => `${p.name} ${p.description} ${p.type}`),
+      storedSkill.name,
+      storedSkill.id,
+      storedSkill.summary,
+      storedSkill.description,
+      storedSkill.category,
+      ...(storedSkill.tags || []),
+      ...(storedSkill.permissions || []),
+      ...storedSkill.parameters.map((p) => `${p.name} ${p.description} ${p.type}`),
     ].join(" ");
 
-    this.bm25.addDocument(skill.id, searchableContent);
+    this.bm25.addDocument(storedSkill.id, searchableContent);
   }
 
   /**
@@ -76,7 +83,8 @@ export class SkillIndex {
       // Check for exact keyword hits for match reason
       const lowerIntent = intent.toLowerCase();
       let matchReason = "Relevance rank based on intent terms";
-      if (skill.tags.some((t) => lowerIntent.includes(t.toLowerCase()))) {
+      const tags = skill.tags || [];
+      if (tags.some((t) => lowerIntent.includes(String(t).toLowerCase()))) {
         matchReason = "Matched domain tag and operation keyword";
       } else if (lowerIntent.includes(skill.name.toLowerCase())) {
         matchReason = "Direct name keyword correlation";

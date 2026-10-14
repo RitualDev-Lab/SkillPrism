@@ -19,18 +19,19 @@ describe("Phase 2: JIT Meta-Tool Harness Suite", () => {
     ],
   };
 
-  test("JitHarness provides minimal 2-tool zero-state (< 180 token footprint)", () => {
+  test("JitHarness provides minimal meta-tool zero-state (< 210 token footprint)", () => {
     const index = new SkillIndex();
     const harness = new JitHarness(index);
 
     const zeroState = harness.getZeroStateTools();
-    assert.equal(zeroState.length, 2);
+    assert.equal(zeroState.length, 3);
     assert.equal(zeroState[0].name, "search_skills");
     assert.equal(zeroState[1].name, "load_skill");
+    assert.equal(zeroState[2].name, "inspect_receipt");
 
-    // Zero-state active tools should only have the 2 meta-tools initially
+    // Zero-state active tools should only have the 3 meta-tools initially
     const active = harness.getActiveTools();
-    assert.equal(active.length, 2);
+    assert.equal(active.length, 3);
   });
 
   test("search_skills returns lightweight candidate summaries without parameter bloat", async () => {
@@ -54,8 +55,8 @@ describe("Phase 2: JIT Meta-Tool Harness Suite", () => {
     index.register(sampleSkill);
     const harness = new JitHarness(index);
 
-    // Initial state: only 2 meta-tools
-    assert.equal(harness.getActiveTools().length, 2);
+    // Initial state: 3 meta-tools (search_skills, load_skill, inspect_receipt)
+    assert.equal(harness.getActiveTools().length, 3);
 
     // Invoke load_skill
     const res = await harness.handleMetaToolCall("load_skill", {
@@ -69,8 +70,8 @@ describe("Phase 2: JIT Meta-Tool Harness Suite", () => {
 
     // Active tools now dynamically includes the activated skill
     const activeTools = harness.getActiveTools();
-    assert.equal(activeTools.length, 3);
-    assert.equal(activeTools[2].name, "snowflake_warehouse_query");
+    assert.equal(activeTools.length, 4);
+    assert.equal(activeTools[3].name, "snowflake_warehouse_query");
   });
 
   test("JitHarness gracefully handles nonexistent skill loads", async () => {
@@ -104,6 +105,6 @@ describe("Phase 2: JIT Meta-Tool Harness Suite", () => {
     // Step turn 2 -> TTL reached, pruned from context
     harness.stepTurn();
     assert.equal(harness.getActiveSkillCount(), 0);
-    assert.equal(harness.getActiveTools().length, 2); // only meta-tools remain
+    assert.equal(harness.getActiveTools().length, 3); // 3 meta-tools remain
   });
 });

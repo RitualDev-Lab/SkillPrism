@@ -13,6 +13,7 @@ export interface DevShelfSyncResult {
   totalSynced: number;
   categories: Record<string, number>;
   sourceUrl: string;
+  isFallback: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export class DevShelfSync {
   ): Promise<DevShelfSyncResult> {
     const categories: Record<string, number> = {};
     let items: DevShelfRawItem[] = [];
+    let isFallback = false;
 
     try {
       if (customFetch) {
@@ -40,20 +42,33 @@ export class DevShelfSync {
         const res = await fetch(DevShelfSync.CANONICAL_API_URL);
         if (res.ok) {
           items = (await res.json()) as DevShelfRawItem[];
+        } else {
+          isFallback = true;
+          items = DevShelfSync.getFallbackSeedCatalog();
         }
       }
     } catch {
-      // Fallback sample catalog if offline
+      isFallback = true;
       items = DevShelfSync.getFallbackSeedCatalog();
     }
 
     if (!Array.isArray(items) || items.length === 0) {
+      isFallback = true;
       items = DevShelfSync.getFallbackSeedCatalog();
     }
 
     let count = 0;
+    const seenIds = new Set<string>();
+
     for (const item of items) {
-      const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      const baseSlug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 50);
+      let slug = baseSlug || "tool";
+      let counter = 1;
+      while (seenIds.has(slug)) {
+        slug = `${baseSlug}_${counter++}`;
+      }
+      seenIds.add(slug);
+
       const cat = (item.category?.toLowerCase() || "general") as any;
 
       index.register({
@@ -78,6 +93,7 @@ export class DevShelfSync {
       totalSynced: count,
       categories,
       sourceUrl: DevShelfSync.CANONICAL_API_URL,
+      isFallback,
     };
   }
 

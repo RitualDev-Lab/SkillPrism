@@ -27,6 +27,10 @@ export class BM25Engine {
   }
 
   public addDocument(docId: string, text: string): void {
+    if (this.docTermFrequencies.has(docId)) {
+      this.removeDocument(docId);
+    }
+
     const terms = this.tokenize(text);
     const termCounts = new Map<string, number>();
 
@@ -44,6 +48,30 @@ export class BM25Engine {
     }
 
     // Recalculate average document length
+    let sumLength = 0;
+    for (const len of this.docLengths.values()) {
+      sumLength += len;
+    }
+    this.avgDocLength = this.totalDocs > 0 ? sumLength / this.totalDocs : 0;
+  }
+
+  public removeDocument(docId: string): void {
+    const existingTerms = this.docTermFrequencies.get(docId);
+    if (!existingTerms) return;
+
+    for (const term of existingTerms.keys()) {
+      const currentFreq = this.docFrequencies.get(term) || 1;
+      if (currentFreq <= 1) {
+        this.docFrequencies.delete(term);
+      } else {
+        this.docFrequencies.set(term, currentFreq - 1);
+      }
+    }
+
+    this.docTermFrequencies.delete(docId);
+    this.docLengths.delete(docId);
+    this.totalDocs = Math.max(0, this.totalDocs - 1);
+
     let sumLength = 0;
     for (const len of this.docLengths.values()) {
       sumLength += len;

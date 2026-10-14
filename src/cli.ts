@@ -1,7 +1,9 @@
-#!/usr/bin/env node
 import { BenchmarkEngine } from "./benchmark.js";
 import { DevShelfSync } from "./devshelf-sync.js";
+import { JitHarness } from "./harness.js";
 import { SkillIndex } from "./index-store.js";
+import { McpProtocolInterceptor } from "./interceptor.js";
+import { SkillPrismProxyServer } from "./proxy-server.js";
 import type { SkillDefinition } from "./types.js";
 
 const sampleSkills: SkillDefinition[] = [
@@ -83,36 +85,79 @@ async function main() {
     }
   } else if (command === "benchmark") {
     console.log("\n⚡ Running SkillPrism Token Optimization & Latency Benchmark...\n");
-    const metrics = BenchmarkEngine.runComparison(sampleSkills);
-    console.log(`📦 Catalog Size: ${metrics.catalogSize} tools`);
+    // Generate representative enterprise-scale catalog for reproducible benchmarking
+    const fullBenchmarkCatalog: SkillDefinition[] = [...sampleSkills];
+    const categories = ["database", "cloud", "devops", "api", "security", "analytics", "ai"];
+    for (let i = 5; i <= 100; i++) {
+      const cat = categories[i % categories.length] as any;
+      fullBenchmarkCatalog.push({
+        id: `tool_${i}`,
+        name: `Enterprise Service Tool ${i}`,
+        summary: `Performs automated enterprise operations on subsystem ${i} with strict validation and metrics`,
+        description: `Enterprise grade tool ${i} connecting to corporate API endpoints with OAuth2 authentication and payload validation`,
+        category: cat,
+        tags: [cat, `service_${i}`, "enterprise", "integration"],
+        permissions: [`${cat}:exec`],
+        parameters: [
+          { name: "targetId", type: "string", description: "Identifier of the target entity", required: true },
+          { name: "options", type: "object", description: "Execution configuration payload" },
+          { name: "dryRun", type: "boolean", description: "Simulate action without persisting changes" },
+        ],
+      });
+    }
+
+    const metrics = BenchmarkEngine.runComparison(fullBenchmarkCatalog);
+    console.log(`📦 Catalog Size: ${metrics.catalogSize} Enterprise Tools`);
     console.log(`🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`);
     console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
     console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
     console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
     console.log(`💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`);
   } else if (command === "sync") {
-    console.log("\n🌐 Syncing 520+ DevShelf Catalog Tools into Out-of-Context Index...\n");
+    console.log("\n🌐 Ingesting Tools into Out-of-Context Index...\n");
     const res = await DevShelfSync.syncToCatalog(index);
-    console.log(`✅ Successfully synced ${res.totalSynced} tools from DevShelf directory!`);
+    if (res.isFallback) {
+      console.log(`ℹ️ [Offline Mode] Ingested ${res.totalSynced} seed community tools (live directory unavailable).`);
+    } else {
+      console.log(`✅ Successfully synced ${res.totalSynced} verified tools from DevShelf directory!`);
+    }
     console.log("📊 Categories ingested:", res.categories);
+  } else if (command === "proxy") {
+    const harness = new JitHarness(index);
+    const interceptor = new McpProtocolInterceptor(harness, index);
+    const proxy = new SkillPrismProxyServer(interceptor);
+
+    let port = 8080;
+    const portIdx = args.indexOf("--port");
+    if (portIdx !== -1 && args[portIdx + 1]) {
+      port = Number.parseInt(args[portIdx + 1], 10) || 8080;
+    }
+
+    if (args.includes("--stdio")) {
+      proxy.startStdio();
+    } else {
+      await proxy.startHttp({ port });
+    }
   } else if (command === "stats") {
     const stats = index.getStats();
     console.log("\n📊 SkillPrism Index Telemetry:");
     console.log(JSON.stringify(stats, null, 2));
   } else {
     console.log(`
-📚 SkillPrism v0.1.0 — Progressive Skill Disclosure Engine
+📚 SkillPrism v1.1.1 — Progressive Skill Disclosure Engine
 
 USAGE:
-  skillprism search <intent>    Search out-of-context tool index by intent
-  skillprism benchmark          Run comparative token savings & latency benchmark
-  skillprism sync               Ingest 520+ tools from DevShelf public directory
-  skillprism stats              Inspect catalog token savings and metrics
+  skillprism search <intent>       Search out-of-context tool index by intent
+  skillprism benchmark             Run comparative token savings & latency benchmark
+  skillprism sync                  Ingest community tools into out-of-context index
+  skillprism proxy [--port 8080]   Start transparent MCP proxy server (HTTP/SSE or --stdio)
+  skillprism stats                 Inspect catalog token savings and metrics
 
 EXAMPLES:
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
   $ npx @ritualdev-lab/skillprism benchmark
-  $ npx @ritualdev-lab/skillprism sync
+  $ npx @ritualdev-lab/skillprism proxy --port 8080
+  $ npx @ritualdev-lab/skillprism proxy --stdio
 `);
   }
 }

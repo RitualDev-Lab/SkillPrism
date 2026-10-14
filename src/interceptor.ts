@@ -33,16 +33,24 @@ export class McpProtocolInterceptor {
   private compactor: ContextCompactor;
   private upstreamExecutor?: ToolExecutionHandler;
 
+  private clientPermissions: Set<string> = new Set(["*"]);
+
   constructor(
     harness: JitHarness,
     index: SkillIndex,
     upstreamExecutor?: ToolExecutionHandler,
-    compactor?: ContextCompactor
+    compactor?: ContextCompactor,
+    initialPermissions: string[] = ["*"]
   ) {
     this.harness = harness;
     this.index = index;
     this.upstreamExecutor = upstreamExecutor;
     this.compactor = compactor || new ContextCompactor();
+    this.clientPermissions = new Set(initialPermissions);
+  }
+
+  public setGrantedPermissions(permissions: string[]): void {
+    this.clientPermissions = new Set(permissions);
   }
 
   public getCompactor(): ContextCompactor {
@@ -63,19 +71,38 @@ export class McpProtocolInterceptor {
     const { id, method, params } = message;
 
     try {
+      // 0. Handle MCP ping
+      if (method === "ping") {
+        return {
+          jsonrpc: "2.0",
+          id: id ?? null,
+          result: {},
+        };
+      }
+
+      // Handle notifications (no response required or empty result)
+      if (method === "notifications/initialized" || method === "initialized") {
+        return {
+          jsonrpc: "2.0",
+          id: id ?? null,
+          result: {},
+        };
+      }
+
       // 1. Handshake / Initialize protocol pass-through
       if (method === "initialize") {
+        const clientProto = params?.protocolVersion || "2024-11-05";
         return {
           jsonrpc: "2.0",
           id,
           result: {
-            protocolVersion: "2024-11-05",
+            protocolVersion: clientProto,
             capabilities: {
               tools: { listChanged: true },
             },
             serverInfo: {
               name: "SkillPrism Progressive JIT Gateway",
-              version: "0.1.0",
+              version: "1.1.1",
             },
           },
         };
@@ -187,22 +214,34 @@ export class McpProtocolInterceptor {
             id,
             error: {
               code: -32601,
-              message: `Tool '${toolName}' not found. Search for skills with 'search_skills' and activate with 'load_skill'.`,
+              message: `Tool '${toolName}' not found in registry. Use 'search_skills' to discover available tools.`,
             },
           };
         }
 
-        // Permission enforcement check (if skill declares permissions)
+        // Enforce Progressive Disclosure: Skill MUST be actively loaded via load_skill
+        if (!this.harness.isSkillActive(toolName)) {
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32002,
+              message: `JIT Gate Block: Tool '${toolName}' is indexed out-of-context but has not been activated. Call 'load_skill({ skill_id: "${toolName}" })' first before calling this tool.`,
+            },
+          };
+        }
+
+        // Enforce Server-Side Configured Permissions (Not self-granted from client params)
         if (skill.permissions && skill.permissions.length > 0) {
-          const grantedPermissions = (params?._permissions || []) as string[];
-          const missing = skill.permissions.filter((p) => !grantedPermissions.includes(p) && !grantedPermissions.includes("*"));
-          if (missing.length > 0 && process.env.SKILLPRISM_ENFORCE_PERMISSIONS === "true") {
+          const hasWildcard = this.clientPermissions.has("*");
+          const missing = skill.permissions.filter((p) => !hasWildcard && !this.clientPermissions.has(p));
+          if (missing.length > 0) {
             return {
               jsonrpc: "2.0",
               id,
               error: {
                 code: -32003,
-                message: `Permission Denied: Execution of '${toolName}' requires permissions [${missing.join(", ")}].`,
+                message: `Permission Denied: Execution of '${toolName}' requires server-granted permissions [${missing.join(", ")}].`,
               },
             };
           }

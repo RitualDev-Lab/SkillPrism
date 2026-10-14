@@ -88,7 +88,34 @@ export class JitHarness {
           required: ["skill_id"],
         },
       },
+      {
+        name: "inspect_receipt",
+        description:
+          "Inspects compacted execution receipts stored in the out-of-context vault. Query full data or drill down into specific sub-paths.",
+        parameters: {
+          type: "object",
+          properties: {
+            ref: {
+              type: "string",
+              description: "The receipt reference token returned by a compacted tool (e.g. 'receipt:sample_exec:4a7f9b8c')",
+            },
+            path: {
+              type: "string",
+              description: "Optional dot/bracket property path to extract (e.g. 'users.0.email')",
+            },
+          },
+          required: ["ref"],
+        },
+      },
     ];
+  }
+
+  /**
+   * Checks whether a specific skill is currently activated and unexpired
+   */
+  public isSkillActive(skillId: string): boolean {
+    this.pruneExpiredSkills();
+    return this.activeSkills.has(skillId);
   }
 
   /**

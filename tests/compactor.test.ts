@@ -105,6 +105,9 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
       compactor
     );
 
+    // Pre-activate tool via load_skill to satisfy JIT Gate
+    await harness.handleMetaToolCall("load_skill", { skill_id: "fetch_audit_logs" });
+
     const callRes = await interceptor.handleMessage({
       jsonrpc: "2.0",
       id: 99,

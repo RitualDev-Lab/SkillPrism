@@ -52,11 +52,12 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
 
     assert.equal(res.id, 2);
     assert.ok(Array.isArray(res.result?.tools));
-    // Must only have search_skills & load_skill (aws_s3_upload is kept hidden!)
-    assert.equal(res.result.tools.length, 2);
+    // Must have 3 meta-tools: search_skills, load_skill, inspect_receipt (aws_s3_upload is kept hidden!)
+    assert.equal(res.result.tools.length, 3);
     const names = res.result.tools.map((t: any) => t.name);
     assert.ok(names.includes("search_skills"));
     assert.ok(names.includes("load_skill"));
+    assert.ok(names.includes("inspect_receipt"));
     assert.ok(!names.includes("aws_s3_upload"));
   });
 
@@ -100,12 +101,12 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
       method: "tools/list",
     });
 
-    assert.equal(listRes.result.tools.length, 3);
+    assert.equal(listRes.result.tools.length, 4);
     const toolNames = listRes.result.tools.map((t: any) => t.name);
     assert.ok(toolNames.includes("aws_s3_upload"));
   });
 
-  test("executes loaded skill through upstream executor handler", async () => {
+  test("blocks unactivated skill call and executes only once activated", async () => {
     const { interceptor } = setupTestEnvironment();
 
     // Mock upstream executor
@@ -117,25 +118,66 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
       return { uploadStatus: "ok", etag: "9b3d5012a4f7" };
     });
 
-    const callRes = await interceptor.handleMessage({
+    // 1. Calling unactivated skill should return JIT block error (-32002)
+    const blockRes = await interceptor.handleMessage({
       jsonrpc: "2.0",
       id: 6,
       method: "tools/call",
       params: {
         name: "aws_s3_upload",
-        arguments: {
-          bucket: "production-backups",
-          key: "db-snapshot-2026.tar.gz",
-        },
+        arguments: { bucket: "production-backups", key: "db-snapshot-2026.tar.gz" },
       },
     });
 
-    assert.equal(callRes.id, 6);
+    assert.equal(blockRes.error?.code, -32002);
+    assert.ok(blockRes.error?.message.includes("JIT Gate Block"));
+
+    // 2. Activate skill
+    await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 7,
+      method: "tools/call",
+      params: { name: "load_skill", arguments: { skill_id: "aws_s3_upload" } },
+    });
+
+    // 3. Now execution succeeds
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 8,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "production-backups", key: "db-snapshot-2026.tar.gz" },
+      },
+    });
+
+    assert.equal(callRes.id, 8);
     assert.equal(capturedTool, "aws_s3_upload");
     assert.equal(capturedArgs.bucket, "production-backups");
 
     const parsedOutput = JSON.parse(callRes.result.content[0].text);
     assert.equal(parsedOutput.uploadStatus, "ok");
     assert.equal(parsedOutput.etag, "9b3d5012a4f7");
+  });
+
+  test("handles MCP ping and version negotiation", async () => {
+    const { interceptor } = setupTestEnvironment();
+
+    const pingRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 99,
+      method: "ping",
+    });
+    assert.equal(pingRes.id, 99);
+    assert.deepEqual(pingRes.result, {});
+
+    const initRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 100,
+      method: "initialize",
+      params: { protocolVersion: "2025-03-26" },
+    });
+    assert.equal(initRes.result.protocolVersion, "2025-03-26");
+    assert.equal(initRes.result.serverInfo.version, "1.1.1");
   });
 });
