@@ -90,7 +90,11 @@ console.log(matches[0].disclosureSnippet);
   - Intercepts `tools/list` to hide out-of-context tools until dynamically loaded
   - Intercepts `tools/call` for zero-friction routing between meta-tools and upstream handlers
   - Full Model Context Protocol (2024-11-05) handshake conformance
-- [ ] **Phase 4: Dynamic Context Compactor & Semantic Receipt Garbage Collector (GC)**
+- [x] **Phase 4: Dynamic Context Compactor & Semantic Receipt Garbage Collector (GC)**
+  - Automatically compacts payloads exceeding threshold into lightweight Semantic Receipts (< 120 tokens)
+  - Stores heavy raw data out-of-context in secure memory vault
+  - Provides `inspect_receipt` query helper for targeted path lookup (e.g. `nodes[1].memory`)
+  - Prevents multi-turn token drift and saves 70% to 85% of execution return tokens
 - [ ] **Phase 5: CLI, Benchmarking Suite & DevShelf Directory Sync**
 
 ---

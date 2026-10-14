@@ -1,3 +1,4 @@
+import { ContextCompactor } from "./compactor.js";
 import type { JitHarness } from "./harness.js";
 import type { SkillIndex } from "./index-store.js";
 
@@ -25,21 +26,27 @@ export type ToolExecutionHandler = (name: string, args: Record<string, any>) => 
  * McpProtocolInterceptor
  * Transparent JSON-RPC proxy sitting between the LLM client (Claude Code, Cursor, Windsurf)
  * and upstream tool executors / MCP servers.
- *
- * It transparently handles:
- * 1. `tools/list`: Intercepts and returns ONLY the lightweight meta-tools + active JIT skills.
- * 2. `tools/call`: Routes `search_skills` and `load_skill` to JitHarness, while forwarding
- *    actual tool calls to the upstream executor.
  */
 export class McpProtocolInterceptor {
   private harness: JitHarness;
   private index: SkillIndex;
+  private compactor: ContextCompactor;
   private upstreamExecutor?: ToolExecutionHandler;
 
-  constructor(harness: JitHarness, index: SkillIndex, upstreamExecutor?: ToolExecutionHandler) {
+  constructor(
+    harness: JitHarness,
+    index: SkillIndex,
+    upstreamExecutor?: ToolExecutionHandler,
+    compactor?: ContextCompactor
+  ) {
     this.harness = harness;
     this.index = index;
     this.upstreamExecutor = upstreamExecutor;
+    this.compactor = compactor || new ContextCompactor();
+  }
+
+  public getCompactor(): ContextCompactor {
+    return this.compactor;
   }
 
   /**
@@ -153,6 +160,25 @@ export class McpProtocolInterceptor {
           };
         }
 
+        // Meta-tool 3: inspect_receipt
+        if (toolName === "inspect_receipt") {
+          const ref = toolArgs.ref;
+          const path = toolArgs.path;
+          const inspected = this.compactor.inspectReceipt(ref, path);
+          return {
+            jsonrpc: "2.0",
+            id,
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify(inspected, null, 2),
+                },
+              ],
+            },
+          };
+        }
+
         // Target Activated Skill Execution
         const skill = this.index.get(toolName);
         if (!skill) {
@@ -167,7 +193,8 @@ export class McpProtocolInterceptor {
         }
 
         if (this.upstreamExecutor) {
-          const output = await this.upstreamExecutor(toolName, toolArgs);
+          const rawOutput = await this.upstreamExecutor(toolName, toolArgs);
+          const { output } = this.compactor.compact(toolName, rawOutput);
           return {
             jsonrpc: "2.0",
             id,
