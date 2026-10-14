@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 export interface SemanticReceipt {
   /** Unique reference token: e.g. "receipt:4a7f9b8c" */
@@ -43,13 +45,20 @@ export class ContextCompactor {
   private maxByteThreshold: number;
   private defaultTtlMs: number;
   private maxVaultEntries: number;
+  private storageDir?: string;
   private totalRawBytesCompacted = 0;
   private totalTokensSaved = 0;
 
-  constructor(maxByteThreshold = 512, defaultTtlMs = 1000 * 60 * 30, maxVaultEntries = 500) {
+  constructor(
+    maxByteThreshold = 512,
+    defaultTtlMs = 1000 * 60 * 30,
+    maxVaultEntries = 500,
+    storageDir?: string
+  ) {
     this.maxByteThreshold = maxByteThreshold;
     this.defaultTtlMs = defaultTtlMs;
     this.maxVaultEntries = maxVaultEntries;
+    this.storageDir = storageDir;
   }
 
   /**
@@ -107,6 +116,21 @@ export class ContextCompactor {
     const expiry = now + (ttlMs || this.defaultTtlMs);
     this.vault.set(ref, { data: rawData, createdAt: now, expiresAt: expiry });
 
+    // Optional disk backup
+    if (this.storageDir) {
+      try {
+        fs.mkdirSync(this.storageDir, { recursive: true });
+        const safeFilename = `${ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+        fs.writeFileSync(
+          path.join(this.storageDir, safeFilename),
+          JSON.stringify({ ref, data: rawData, expiresAt: expiry }),
+          "utf8"
+        );
+      } catch {
+        // Disk write is best-effort fallback
+      }
+    }
+
     // Extract high-value summary and scalar fields
     const { summary, keyFields } = this.extractSemanticSummary(toolName, rawData);
 
@@ -140,8 +164,24 @@ export class ContextCompactor {
   /**
    * Model tool to inspect or drill down into specific keys of a compacted receipt
    */
-  public inspectReceipt(ref: string, path?: string): { success: boolean; data?: any; error?: string } {
-    const entry = this.vault.get(ref);
+  public inspectReceipt(ref: string, queryPath?: string): { success: boolean; data?: any; error?: string } {
+    let entry = this.vault.get(ref);
+    if (!entry && this.storageDir) {
+      try {
+        const safeFilename = `${ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+        const filePath = path.join(this.storageDir, safeFilename);
+        if (fs.existsSync(filePath)) {
+          const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
+          if (Date.now() <= raw.expiresAt) {
+            entry = { data: raw.data, createdAt: Date.now(), expiresAt: raw.expiresAt };
+            this.vault.set(ref, entry);
+          }
+        }
+      } catch {
+        // Disk read error
+      }
+    }
+
     if (!entry) {
       return {
         success: false,
@@ -160,13 +200,13 @@ export class ContextCompactor {
 
     const fullData = entry.data;
 
-    if (!path) {
+    if (!queryPath) {
       return { success: true, data: fullData };
     }
 
     // Simple dot/bracket path resolution: e.g. "users.0.email"
     try {
-      const keys = path.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean);
+      const keys = queryPath.replace(/\[(\d+)\]/g, ".$1").split(".").filter(Boolean);
       let current = fullData;
       for (const key of keys) {
         if (current === undefined || current === null) break;
@@ -174,7 +214,7 @@ export class ContextCompactor {
       }
       return { success: true, data: current };
     } catch (err: any) {
-      return { success: false, error: `Failed to resolve path '${path}': ${err.message}` };
+      return { success: false, error: `Failed to resolve path '${queryPath}': ${err.message}` };
     }
   }
 

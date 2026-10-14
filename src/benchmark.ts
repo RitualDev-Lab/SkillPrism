@@ -1,3 +1,4 @@
+import { encode } from "gpt-tokenizer";
 import { ContextCompactor } from "./compactor.js";
 import { JitHarness } from "./harness.js";
 import { SkillIndex } from "./index-store.js";
@@ -15,8 +16,17 @@ export interface BenchmarkMetrics {
 /**
  * BenchmarkEngine
  * Quantifies exact token reductions, context preservation, and latency.
+ * Uses real BPE tokenizer (gpt-tokenizer cl100k_base / o200k_base) for honest metric reporting.
  */
 export class BenchmarkEngine {
+  public static countTokens(text: string): number {
+    try {
+      return encode(text).length;
+    } catch {
+      return Math.ceil(text.length / 3.8);
+    }
+  }
+
   public static runComparison(sampleCatalog: SkillDefinition[]): BenchmarkMetrics {
     const index = new SkillIndex();
     index.registerBatch(sampleCatalog);
@@ -24,17 +34,17 @@ export class BenchmarkEngine {
     const harness = new JitHarness(index);
     const compactor = new ContextCompactor(256);
 
-    // 1. Calculate unoptimized zero-state tokens (preloading all schemas upfront)
+    // 1. Calculate unoptimized zero-state tokens (preloading all schemas upfront with real BPE tokenizer)
     let unoptimizedTokens = 0;
     for (const skill of sampleCatalog) {
       const rawText = JSON.stringify(harness.convertToToolDefinition(skill));
-      unoptimizedTokens += Math.ceil(rawText.length / 3.8);
+      unoptimizedTokens += BenchmarkEngine.countTokens(rawText);
     }
 
-    // 2. Calculate SkillPrism zero-state tokens (only 2 meta-tools)
+    // 2. Calculate SkillPrism zero-state tokens (only 3 meta-tools with real BPE tokenizer)
     const zeroStateTools = harness.getZeroStateTools();
     const zeroStateText = JSON.stringify(zeroStateTools);
-    const skillPrismZeroTokens = Math.ceil(zeroStateText.length / 3.8);
+    const skillPrismZeroTokens = BenchmarkEngine.countTokens(zeroStateText);
 
     const tokenSavingsPercentage = Number(
       (((unoptimizedTokens - skillPrismZeroTokens) / unoptimizedTokens) * 100).toFixed(1)

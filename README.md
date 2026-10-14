@@ -73,6 +73,85 @@ console.log(matches[0].disclosureSnippet);
 
 ---
 
+## 🛠️ Client Integration Adapters
+
+Connect SkillPrism as a transparent MCP server to eliminate tool prompt bloat in your favorite AI coding agent:
+
+### 1. Claude Code CLI
+
+Add SkillPrism to your Claude Code workspace:
+
+```bash
+claude mcp add skillprism -- npx -y @ritualdev-lab/skillprism proxy --stdio
+```
+
+Or configure directly in `claude.json`:
+```json
+{
+  "mcpServers": {
+    "skillprism": {
+      "command": "npx",
+      "args": ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"]
+    }
+  }
+}
+```
+
+### 2. Cursor IDE (`~/.cursor/mcp.json`)
+
+Add to your Cursor global or workspace MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "skillprism": {
+      "command": "npx",
+      "args": ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"]
+    }
+  }
+}
+```
+
+### 3. Windsurf IDE (`~/.codeium/windsurf/mcp_config.json`)
+
+```json
+{
+  "mcpServers": {
+    "skillprism": {
+      "command": "npx",
+      "args": ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"]
+    }
+  }
+}
+```
+
+---
+
+## 💻 CLI Commands
+
+```bash
+# Search out-of-context index by natural intent
+npx @ritualdev-lab/skillprism search "upload file to s3"
+
+# Ingest and convert OpenAPI 3.0/3.1 specs
+npx @ritualdev-lab/skillprism import ./api-spec.json
+
+# Fetch and index tools from a running MCP server
+npx @ritualdev-lab/skillprism add http://localhost:3000/mcp
+
+# Run verifiable BPE token benchmark
+npx @ritualdev-lab/skillprism benchmark
+
+# Sync verified community tools from DevShelf directory
+npx @ritualdev-lab/skillprism sync
+
+# Start transparent MCP stdio or HTTP proxy
+npx @ritualdev-lab/skillprism proxy --stdio
+npx @ritualdev-lab/skillprism proxy --port 8080
+```
+
+---
+
 ## 📊 Live Benchmark Results
 
 ```text

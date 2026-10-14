@@ -70,6 +70,20 @@ async function main() {
   const index = new SkillIndex();
   index.registerBatch(sampleSkills);
 
+  // Auto-hydrate persisted catalog if available
+  const fs = await import("node:fs/promises");
+  const path = await import("node:path");
+  const CATALOG_FILE = path.resolve(process.cwd(), ".skillprism.json");
+  try {
+    const rawSaved = await fs.readFile(CATALOG_FILE, "utf8");
+    const count = index.importFromJson(rawSaved);
+    if (count > 0 && command !== "proxy") {
+      console.log(`📁 Loaded ${count} custom tools from .skillprism.json`);
+    }
+  } catch {
+    // No existing catalog file
+  }
+
   if (command === "search") {
     const query = args.slice(1).join(" ");
     if (!query) {
@@ -82,6 +96,57 @@ async function main() {
       console.log(`✨ [Score: ${r.score}] ${r.skill.name} (${r.skill.id})`);
       console.log(`   Summary: ${r.skill.summary}`);
       console.log(`   Tokens: ~${r.skill.tokenCostEstimate} tokens saved from zero-state\n`);
+    }
+  } else if (command === "add") {
+    const targetUrl = args[1];
+    if (!targetUrl) {
+      console.error("Usage: skillprism add <mcp-url-or-endpoint>");
+      process.exit(1);
+    }
+    console.log(`\n🔌 Querying remote MCP endpoint: ${targetUrl}...`);
+    try {
+      const response = await fetch(targetUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+      });
+      const data: any = await response.json();
+      const tools = data?.result?.tools || [];
+      if (!Array.isArray(tools) || tools.length === 0) {
+        console.log("⚠️ No tools returned from endpoint or endpoint is not a JSON-RPC MCP server.");
+      } else {
+        const imported = index.importFromMcp(tools);
+        await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
+        console.log(`✅ Successfully imported ${imported} tools and saved to .skillprism.json!`);
+      }
+    } catch (err: any) {
+      console.error(`❌ Failed to connect to MCP server: ${err.message}`);
+    }
+  } else if (command === "import") {
+    const filePath = args[1];
+    if (!filePath) {
+      console.error("Usage: skillprism import <openapi-or-catalog.json>");
+      process.exit(1);
+    }
+    try {
+      const resolved = path.resolve(process.cwd(), filePath);
+      const content = await fs.readFile(resolved, "utf8");
+      const parsed = JSON.parse(content);
+
+      let imported = 0;
+      if (parsed.paths) {
+        // OpenAPI specification
+        imported = index.importFromOpenApi(parsed);
+        console.log(`✅ Converted and indexed ${imported} endpoints from OpenAPI spec!`);
+      } else {
+        // SkillPrism or MCP catalog
+        imported = index.importFromJson(content);
+        console.log(`✅ Imported ${imported} tool definitions into catalog!`);
+      }
+      await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
+      console.log(`💾 Saved updated catalog to .skillprism.json`);
+    } catch (err: any) {
+      console.error(`❌ Failed to import file: ${err.message}`);
     }
   } else if (command === "benchmark") {
     console.log("\n⚡ Running SkillPrism Token Optimization & Latency Benchmark...\n");
@@ -122,6 +187,8 @@ async function main() {
       console.log(`✅ Successfully synced ${res.totalSynced} verified tools from DevShelf directory!`);
     }
     console.log("📊 Categories ingested:", res.categories);
+    await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
+    console.log(`💾 Saved updated catalog to .skillprism.json`);
   } else if (command === "proxy") {
     const harness = new JitHarness(index);
     const interceptor = new McpProtocolInterceptor(harness, index);
@@ -148,6 +215,8 @@ async function main() {
 
 USAGE:
   skillprism search <intent>       Search out-of-context tool index by intent
+  skillprism add <mcp-endpoint>    Fetch & register tools from remote MCP server
+  skillprism import <openapi.json> Convert OpenAPI 3.0 or JSON catalog into tools
   skillprism benchmark             Run comparative token savings & latency benchmark
   skillprism sync                  Ingest community tools into out-of-context index
   skillprism proxy [--port 8080]   Start transparent MCP proxy server (HTTP/SSE or --stdio)
@@ -155,6 +224,8 @@ USAGE:
 
 EXAMPLES:
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
+  $ npx @ritualdev-lab/skillprism add http://localhost:3000/mcp
+  $ npx @ritualdev-lab/skillprism import ./petstore-openapi.json
   $ npx @ritualdev-lab/skillprism benchmark
   $ npx @ritualdev-lab/skillprism proxy --port 8080
   $ npx @ritualdev-lab/skillprism proxy --stdio
