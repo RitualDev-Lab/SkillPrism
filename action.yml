@@ -10,7 +10,7 @@ inputs:
   post_pr_comment:
     description: "Whether to post an automated token optimization report comment on Pull Requests"
     required: false
-    default: "true"
+    default: "true" 
   github_token:
     description: "GitHub secret token used to post PR review comments (defaults to github.token)"
     required: false
