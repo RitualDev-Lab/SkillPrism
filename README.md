@@ -175,7 +175,7 @@ npx @ritualdev-lab/skillprism proxy --port 8080
 ## 💖 Community & Commercial Support
 
 * **Website & Live Demo**: [skillprism.ritualdev.in](https://skillprism.ritualdev.in)
-* **Donations**: Support independent open-source AI tooling research via [donation.rolenest.in](https://donation.rolenest.in).
+* **Sponsorship**: Support independent open-source AI tooling research via [Dodo Payments](https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva).
 * **Enterprise & Turnkey**: Need custom private MCP servers or enterprise skill gateways? Visit [mcp.ritualdev.in](https://mcp.ritualdev.in#enterprise) or contact `contact@ritualdev.in`.
 * **Developer Inquiries & Support**: Reach out directly to `developer@ritualdev.in` or `support@ritualdev.in`.
 
