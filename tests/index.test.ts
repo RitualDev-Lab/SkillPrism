@@ -100,4 +100,52 @@ describe("Phase 1: Out-of-Context Skill Index & BM25 Catalog Suite", () => {
     assert.equal(skill.parameters[0].name, "query");
     assert.equal(skill.parameters[0].required, true);
   });
+
+  test("FastTextEmbeddingEngine computes dense vector similarity for paraphrased intents", async () => {
+    const { FastTextEmbeddingEngine } = await import("../src/embeddings.js");
+    const v1 = FastTextEmbeddingEngine.embed("store a photo in cloud bucket");
+    const v2 = FastTextEmbeddingEngine.embed("aws s3 storage upload");
+    const v3 = FastTextEmbeddingEngine.embed("unrelated database postgres sql");
+
+    assert.equal(v1.length, 64);
+    assert.equal(v2.length, 64);
+
+    const simRelated = FastTextEmbeddingEngine.cosineSimilarity(v1, v2);
+    const simUnrelated = FastTextEmbeddingEngine.cosineSimilarity(v1, v3);
+
+    assert.ok(simRelated > simUnrelated);
+  });
+
+  test("SkillPrismSqliteStore persists skills and receipts across restarts", async () => {
+    const { SkillPrismSqliteStore } = await import("../src/sqlite-store.js");
+    const path = await import("node:path");
+    const fs = await import("node:fs");
+    const tempDbPath = path.join(process.cwd(), ".test-index.sqlite");
+    const store = new SkillPrismSqliteStore(tempDbPath);
+
+    if (store.isAvailable()) {
+      store.saveSkill({
+        id: "test_sqlite_skill",
+        name: "Test SQLite Skill",
+        summary: "Testing SQLite integration",
+        category: "devops",
+        tags: ["test"],
+        parameters: [],
+      });
+
+      const loaded = store.loadSkills();
+      assert.ok(loaded.some((s: any) => s.id === "test_sqlite_skill"));
+
+      store.saveReceipt("receipt:test:123", "test_tool", "Summary test", { foo: "bar" }, 100, 20, Date.now() + 10000);
+      const data = store.loadReceiptData("receipt:test:123");
+      assert.deepEqual(data, { foo: "bar" });
+
+      store.close();
+      try {
+        fs.unlinkSync(tempDbPath);
+      } catch {}
+    }
+  });
 });
+
+

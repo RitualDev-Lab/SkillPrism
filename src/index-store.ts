@@ -1,5 +1,6 @@
 import { encode } from "gpt-tokenizer";
 import { BM25Engine } from "./bm25.js";
+import { FastTextEmbeddingEngine } from "./embeddings.js";
 import type { IndexStats, SkillDefinition, SkillSearchResult } from "./types.js";
 
 /**
@@ -10,6 +11,7 @@ import type { IndexStats, SkillDefinition, SkillSearchResult } from "./types.js"
 export class SkillIndex {
   private skills: Map<string, SkillDefinition> = new Map();
   private bm25: BM25Engine = new BM25Engine();
+  private embeddings: Map<string, number[]> = new Map();
 
   /**
    * Register a new skill into the out-of-context catalog
@@ -46,6 +48,10 @@ export class SkillIndex {
     ].join(" ");
 
     this.bm25.addDocument(storedSkill.id, searchableContent);
+
+    // Compute and index continuous dense semantic embedding vector
+    const vector = FastTextEmbeddingEngine.embed(searchableContent);
+    this.embeddings.set(storedSkill.id, vector);
   }
 
   /**
@@ -119,18 +125,30 @@ export class SkillIndex {
     const rawScores = this.bm25.search(expandedQuery);
     const results: SkillSearchResult[] = [];
 
-    // Find maximum score for normalization
-    let maxScore = 0;
+    // Pre-compute query dense embedding vector for semantic search tier
+    const queryEmbedding = FastTextEmbeddingEngine.embed(intent);
+
+    // Find maximum BM25 score for normalization
+    let maxBm25Score = 0;
     for (const score of rawScores.values()) {
-      if (score > maxScore) maxScore = score;
+      if (score > maxBm25Score) maxBm25Score = score;
     }
 
-    for (const [id, rawScore] of rawScores.entries()) {
-      if (rawScore <= 0) continue;
-      const skill = this.skills.get(id);
-      if (!skill) continue;
+    // Evaluate all registered skills across both lexical (BM25) and semantic embedding tiers
+    for (const [id, skill] of this.skills.entries()) {
+      const bm25Raw = rawScores.get(id) || 0;
+      const bm25Normalized = maxBm25Score > 0 ? bm25Raw / maxBm25Score : 0;
 
-      let normalizedScore = maxScore > 0 ? Number((rawScore / maxScore).toFixed(4)) : 0;
+      // Semantic embedding similarity
+      const docEmbedding = this.embeddings.get(id);
+      const semanticSim = docEmbedding
+        ? FastTextEmbeddingEngine.cosineSimilarity(queryEmbedding, docEmbedding)
+        : 0;
+
+      // Hybrid rank score: 60% lexical BM25 + 40% dense semantic embeddings
+      let hybridScore = bm25Normalized * 0.6 + semanticSim * 0.4;
+
+      if (hybridScore <= 0.05) continue;
 
       // Check for exact keyword hits for match reason
       const lowerIntent = intent.toLowerCase();
@@ -138,17 +156,19 @@ export class SkillIndex {
       const tags = skill.tags || [];
       if (tags.some((t) => lowerIntent.includes(String(t).toLowerCase()))) {
         matchReason = "Matched domain tag and operation keyword";
-        normalizedScore = Math.min(1.0, normalizedScore + 0.1);
+        hybridScore = Math.min(1.0, hybridScore + 0.1);
       } else if (lowerIntent.includes(skill.name.toLowerCase())) {
         matchReason = "Direct name keyword correlation";
-        normalizedScore = Math.min(1.0, normalizedScore + 0.15);
+        hybridScore = Math.min(1.0, hybridScore + 0.15);
+      } else if (semanticSim > 0.45) {
+        matchReason = `Dense vector semantic match (${(semanticSim * 100).toFixed(0)}% similarity)`;
       } else {
         matchReason = "Semantic intent correlation & synonym match";
       }
 
       results.push({
         skill,
-        score: normalizedScore,
+        score: Number(hybridScore.toFixed(4)),
         matchReason,
         disclosureSnippet: {
           id: skill.id,

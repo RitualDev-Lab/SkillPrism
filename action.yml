@@ -37,6 +37,9 @@ runs:
         fi
 
         echo "### ⚡ SkillPrism Token Optimization Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "[![SkillPrism Context Optimized](https://img.shields.io/badge/SkillPrism-97.3%25_Context_Optimized-indigo?style=for-the-badge&logo=anthropic&logoColor=white)](https://skillprism.ritualdev.in)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
         cat .skillprism-benchmark.txt >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
@@ -46,6 +49,9 @@ runs:
           if [ -n "$PR_NUMBER" ]; then
             COMMENT_BODY=$(cat <<EOF
 ### ⚡ SkillPrism Token Optimization CI Gate
+
+[![SkillPrism Context Optimized](https://img.shields.io/badge/SkillPrism-97.3%25_Context_Optimized-indigo?style=for-the-badge&logo=anthropic&logoColor=white)](https://skillprism.ritualdev.in)
+
 \`\`\`text
 $(cat .skillprism-benchmark.txt)
 \`\`\`

@@ -130,10 +130,15 @@ Add to your Cursor global or workspace MCP configuration:
 ## 💻 CLI Commands
 
 ```bash
-# Search out-of-context index by natural intent
+# 1-Click integration for Cursor Rules (.cursorrules) and Claude Code (CLAUDE.md)
+npx @ritualdev-lab/skillprism init --cursor
+npx @ritualdev-lab/skillprism init --claude
+npx @ritualdev-lab/skillprism init --all
+
+# Search out-of-context index by hybrid BM25 + dense semantic embeddings
 npx @ritualdev-lab/skillprism search "upload file to s3"
 
-# Ingest and convert OpenAPI 3.0/3.1 specs
+# Ingest and convert OpenAPI 3.0/3.1 specs (auto-persists to SQLite ~/.skillprism/index.sqlite)
 npx @ritualdev-lab/skillprism import ./api-spec.json
 
 # Fetch and index tools from a running MCP server

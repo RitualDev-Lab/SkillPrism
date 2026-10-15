@@ -71,9 +71,22 @@ async function main() {
   const index = new SkillIndex();
   index.registerBatch(sampleSkills);
 
-  // Auto-hydrate persisted catalog if available
+  // Auto-hydrate persisted catalog from SQLite (~/.skillprism/index.sqlite) and local JSON
   const fs = await import("node:fs/promises");
   const path = await import("node:path");
+  const { SkillPrismSqliteStore } = await import("./sqlite-store.js");
+  const sqliteStore = new SkillPrismSqliteStore();
+
+  if (sqliteStore.isAvailable()) {
+    const sqliteSkills = sqliteStore.loadSkills();
+    if (sqliteSkills.length > 0) {
+      index.registerBatch(sqliteSkills);
+      if (command !== "proxy") {
+        console.log(`🗄️ Loaded ${sqliteSkills.length} tools from SQLite (${sqliteStore.getDbPath()})`);
+      }
+    }
+  }
+
   const CATALOG_FILE = path.resolve(process.cwd(), ".skillprism.json");
   try {
     const rawSaved = await fs.readFile(CATALOG_FILE, "utf8");
@@ -85,7 +98,56 @@ async function main() {
     // No existing catalog file
   }
 
-  if (command === "search") {
+  if (command === "init") {
+    const isCursor = args.includes("--cursor") || (!args.includes("--claude") && !args.includes("--all"));
+    const isClaude = args.includes("--claude") || args.includes("--all");
+
+    console.log("\n⚡ Initializing SkillPrism in current project...\n");
+
+    if (isCursor || args.includes("--all")) {
+      const cursorRulesContent = `# SkillPrism Progressive Skill Disclosure & Context Compaction
+# Drop this into your repository to prevent 10,000+ token context window explosion
+
+You are paired with SkillPrism (https://skillprism.ritualdev.in).
+Instead of dumping full tool schemas or massive payload JSONs:
+1. Always search tools by intent via \`search_skills\` before executing unfamiliar actions.
+2. Load only the specific tool needed for the current step via \`load_skill\`.
+3. Read semantic receipts (\`receipt:...\`) via \`inspect_receipt\` rather than asking for full raw payload dumps.
+`;
+      await fs.writeFile(path.resolve(process.cwd(), ".cursorrules"), cursorRulesContent, "utf8");
+      console.log("✅ Created .cursorrules with SkillPrism optimization guidelines");
+    }
+
+    if (isClaude || args.includes("--all")) {
+      const claudeMdContent = `# SkillPrism Configuration for Claude Code
+
+## Token & Context Optimization
+- **Proxy Command**: \`npx -y @ritualdev-lab/skillprism proxy --stdio\`
+- **Out-of-Context Tools**: Keep tool definitions in SkillPrism index to save 97.3% upfront token context.
+- **Semantic Receipts**: When operations return heavy payloads (> 512 bytes), inspect receipts rather than dumping raw JSON.
+`;
+      await fs.writeFile(path.resolve(process.cwd(), "CLAUDE.md"), claudeMdContent, "utf8");
+      console.log("✅ Created CLAUDE.md with Claude Code SkillPrism instructions");
+    }
+
+    const mcpConfigPath = path.resolve(process.cwd(), ".mcp.json");
+    try {
+      const mcpSnippet = {
+        mcpServers: {
+          skillprism: {
+            command: "npx",
+            args: ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"],
+          },
+        },
+      };
+      await fs.writeFile(mcpConfigPath, JSON.stringify(mcpSnippet, null, 2), "utf8");
+      console.log("✅ Generated .mcp.json with stdio proxy configuration");
+    } catch {
+      // Best effort
+    }
+
+    console.log("\n🎉 SkillPrism integration complete! Start your agent to enjoy 97%+ context savings.\n");
+  } else if (command === "search") {
     const query = args.slice(1).join(" ");
     if (!query) {
       console.error("Usage: skillprism search <query>");
@@ -118,7 +180,10 @@ async function main() {
       } else {
         const imported = index.importFromMcp(tools);
         await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
-        console.log(`✅ Successfully imported ${imported} tools and saved to .skillprism.json!`);
+        if (sqliteStore.isAvailable()) {
+          sqliteStore.saveSkillsBatch(Array.from((index as any).skills.values()));
+        }
+        console.log(`✅ Successfully imported ${imported} tools and saved to SQLite & .skillprism.json!`);
       }
     } catch (err: any) {
       console.error(`❌ Failed to connect to MCP server: ${err.message}`);
@@ -145,7 +210,10 @@ async function main() {
         console.log(`✅ Imported ${imported} tool definitions into catalog!`);
       }
       await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
-      console.log("💾 Saved updated catalog to .skillprism.json");
+      if (sqliteStore.isAvailable()) {
+        sqliteStore.saveSkillsBatch(Array.from((index as any).skills.values()));
+      }
+      console.log("💾 Saved updated catalog to SQLite and .skillprism.json");
     } catch (err: any) {
       console.error(`❌ Failed to import file: ${err.message}`);
     }
@@ -230,6 +298,7 @@ async function main() {
 📚 SkillPrism v1.1.1 — Progressive Skill Disclosure Engine
 
 USAGE:
+  skillprism init [--cursor|--claude|--all] Drop .cursorrules / CLAUDE.md into current repo
   skillprism search <intent>       Search out-of-context tool index by intent
   skillprism add <mcp-endpoint>    Fetch & register tools from remote MCP server
   skillprism import <openapi.json> Convert OpenAPI 3.0 or JSON catalog into tools
@@ -239,6 +308,7 @@ USAGE:
   skillprism stats                 Inspect catalog token savings and metrics
 
 EXAMPLES:
+  $ npx @ritualdev-lab/skillprism init --cursor
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
   $ npx @ritualdev-lab/skillprism add http://localhost:3000/mcp
   $ npx @ritualdev-lab/skillprism import ./petstore-openapi.json

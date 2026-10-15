@@ -7,3 +7,5 @@ export * from "./compactor.js";
 export * from "./devshelf-sync.js";
 export * from "./benchmark.js";
 export * from "./proxy-server.js";
+export * from "./sqlite-store.js";
+export * from "./embeddings.js";
