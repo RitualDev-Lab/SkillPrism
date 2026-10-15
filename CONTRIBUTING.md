@@ -12,7 +12,7 @@ git clone https://github.com/RitualDev-Lab/SkillPrism.git
 cd SkillPrism
 
 # Install dependencies
-pnpm install
+pnpm install 
 
 # Run the test suite
 pnpm test
