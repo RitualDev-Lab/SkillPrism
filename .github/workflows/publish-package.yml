@@ -80,12 +80,14 @@ jobs:
       - name: Build SkillPrism
         run: pnpm run build
 
-      - name: Publish to npm
+      - name: Publish to npm Registry
+        continue-on-error: true
         run: |
           if [ -n "${NPM_TOKEN}" ]; then
-            pnpm publish --no-git-checks --access public
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+            pnpm publish --no-git-checks --access public || echo "npm publish failed or version already exists on npm."
           else
-            echo "NPM_TOKEN is not configured, skipping npm registry publish."
+            echo "NPM_TOKEN secret is not set in repository secrets; skipping npm registry publish."
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
