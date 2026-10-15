@@ -176,6 +176,66 @@ npx @ritualdev-lab/skillprism proxy --port 8080
 
 ---
 
+## 👥 Team & Contributors
+
+SkillPrism is initiated and maintained by the team at [RitualDev Lab](https://github.com/RitualDev-Lab) and expanded by the open-source AI community.
+
+### 🛡️ Core Team & Maintainers
+
+<table align="center">
+  <tr>
+    <td align="center" width="180">
+      <a href="https://github.com/divyanshujethi">
+        <img src="https://github.com/divyanshujethi.png" width="80" style="border-radius: 50%;" alt="Divyanshu Jethi"/><br />
+        <sub><b>Divyanshu Jethi</b></sub>
+      </a><br />
+      <sub>🚀 Founder & Lead</sub>
+    </td>
+    <td align="center" width="180">
+      <a href="https://github.com/Sakshisharma1616">
+        <img src="https://github.com/Sakshisharma1616.png" width="80" style="border-radius: 50%;" alt="Sakshi Sharma"/><br />
+        <sub><b>Sakshi Sharma</b></sub>
+      </a><br />
+      <sub>🎨 Core Maintainer & Product</sub>
+    </td>
+    <td align="center" width="180">
+      <a href="https://github.com/Ritual-Dev-Git">
+        <img src="https://github.com/Ritual-Dev-Git.png" width="80" style="border-radius: 50%;" alt="RitualDev"/><br />
+        <sub><b>RitualDev</b></sub>
+      </a><br />
+      <sub>⚙️ Core Maintainer & Infra</sub>
+    </td>
+    <td align="center" width="180">
+      <a href="https://github.com/Divyanshu-hub-dotcom">
+        <img src="https://github.com/Divyanshu-hub-dotcom.png" width="80" style="border-radius: 50%;" alt="Divyanshu-hub-dotcom"/><br />
+        <sub><b>Divyanshu-hub-dotcom</b></sub>
+      </a><br />
+      <sub>🛠️ Core Member</sub>
+    </td>
+    <td align="center" width="180">
+      <a href="https://github.com/ayushxx01">
+        <img src="https://github.com/ayushxx01.png" width="80" style="border-radius: 50%;" alt="Ayush"/><br />
+        <sub><b>Ayush</b></sub>
+      </a><br />
+      <sub>🛡️ Core Maintainer & Triage</sub>
+    </td>
+  </tr>
+</table>
+
+### 🌟 Community Contributors & Builders
+
+<p align="center">
+  <a href="https://github.com/RitualDev-Lab/SkillPrism/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=RitualDev-Lab/SkillPrism" alt="SkillPrism Contributors" />
+  </a>
+</p>
+
+<p align="center">
+  Huge thanks to all our open-source <a href="https://github.com/RitualDev-Lab/SkillPrism/graphs/contributors">Contributors</a>! We warmly welcome issues, feedback, and pull requests.
+</p>
+
+---
+
 ## 📄 License
 
 Apache-2.0 © 2026 [RitualDev Lab](https://github.com/RitualDev-Lab).

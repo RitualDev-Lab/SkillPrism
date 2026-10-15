@@ -1,0 +1,69 @@
+name: 💬 PR & Issue Contributor Welcome & Review Bot
+
+on:
+  pull_request_target:
+    types: [opened]
+  issues:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  welcome-contributor:
+    name: Welcome Contributor & Triage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Welcome Pull Request Contributor
+        if: github.event_name == 'pull_request_target'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const isBot = pr.user.type === 'Bot';
+            if (isBot) return;
+
+            const welcomeBody = `### 👋 Thanks for opening this Pull Request, @${author}!
+
+Thank you for contributing to **SkillPrism**! 🚀
+
+Here is what happens next:
+1. 🧪 **Automated CI Tests**: Our workflow is verifying code compilation, Biome formatting, and token benchmarks.
+2. 🔍 **Code Review**: A maintainer from @RitualDev-Lab will review your changes shortly.
+3. 🌟 **Contributor Recognition**: Once merged, you'll be featured on our contributors list!
+
+> 💡 **Tip**: Make sure your commits follow [Conventional Commits](https://www.conventionalcommits.org/) and tests pass locally (\`pnpm test\`).`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: welcomeBody
+            });
+
+      - name: Welcome Issue Author
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const author = issue.user.login;
+            const isBot = issue.user.type === 'Bot';
+            if (isBot) return;
+
+            const welcomeBody = `### 👋 Thanks for reporting this issue, @${author}!
+
+We appreciate your feedback and help in making **SkillPrism** better. 💎
+
+Our core team will triage this issue shortly. If you have additional context (logs, reproductions, or agent environment details like Claude Code / Cursor / Windsurf), feel free to drop them below!
+
+> 🤝 Want to contribute a fix? Let us know and we'd be happy to guide you through opening a PR!`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: welcomeBody
+            });
