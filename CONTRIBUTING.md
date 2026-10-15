@@ -34,3 +34,14 @@ pnpm run build
 2. Add unit tests for your changes under `tests/`.
 3. Commit with standard conventional commit messages (`feat: ...`, `fix: ...`).
 4. Submit a Pull Request targeting `main`.
+
+---
+
+## 🏛️ Project Governance & Direct Access Admins
+
+SkillPrism is governed by [RitualDev Lab](https://github.com/RitualDev-Lab). Core releases, signing keys, and repository admin controls are managed by our **Direct Access Admins**:
+
+- **Divyanshu Jethi** ([@divyanshujethi](https://github.com/divyanshujethi)) &mdash; Founder & Lead
+- **Sakshi Sharma** ([@Sakshisharma1616](https://github.com/Sakshisharma1616)) &mdash; Core Maintainer & Product
+- **RitualDev** ([@Ritual-Dev-Git](https://github.com/Ritual-Dev-Git)) &mdash; Core Maintainer & Infra
+

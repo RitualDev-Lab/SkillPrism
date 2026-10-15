@@ -1,0 +1,39 @@
+name: 🔍 SEO, GEO & AEO Discovery Optimization
+description: Propose improvements for search engine, AI engine (ChatGPT/Claude/Perplexity), or llms.txt discovery
+title: "[SEO/AEO]: "
+labels: ["documentation", "seo", "aeo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help optimize **SkillPrism** for developer discovery across classical search engines (Google, Bing) and Answer Engine Optimization (AEO / GEO for Claude, Perplexity, ChatGPT).
+  - type: dropdown
+    id: seo-category
+    attributes:
+      label: Target Optimization Surface
+      description: Where should this SEO/AEO enhancement be implemented?
+      options:
+        - Documentation / llms.txt / llms-full.txt
+        - Meta Tags / OpenGraph / Twitter Cards / JSON-LD
+        - AI Engine Citations & Answers (Perplexity / ChatGPT / Claude)
+        - Keyword Research & Intent Targeting (e.g. MCP Token Optimization, Progressive Disclosure)
+        - Schema.org Structured Data
+        - Cross-Repository Deep Linking
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-enhancement
+    attributes:
+      label: Proposed Enhancement / Keywords
+      description: Describe the keywords, metadata tags, or structured answer patterns to add.
+      placeholder: |
+        e.g. Add Schema.org SoftwareApplication markup to documentation site with keywords: "MCP token optimization", "Model Context Protocol compaction", "progressive skill disclosure".
+    validations:
+      required: true
+  - type: textarea
+    id: expected-impact
+    attributes:
+      label: Expected Impact & Value
+      description: How will this help developers or autonomous AI agents discover and reference this project?
+    validations:
+      required: true
