@@ -1,6 +1,6 @@
 {
   "name": "@ritualdev-lab/skillprism",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Progressive Skill Disclosure & Context Compaction Engine for Autonomous AI Coding Agents",
   "type": "module",
   "main": "./dist/index.js",
