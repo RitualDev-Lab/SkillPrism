@@ -47,7 +47,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "test": "tsx --test",
     "benchmark": "tsx src/cli.ts benchmark",
     "prepublishOnly": "pnpm run build && pnpm test && npm pack --dry-run",
     "lint": "biome lint .",
