@@ -367,6 +367,25 @@ export class SkillPrismProxyServer {
             if (rejected) return;
             try {
               const parsed = JSON.parse(body);
+
+              // Standard MCP & JSON-RPC 2.0 Notification Transport:
+              // Notifications (requests without an id member) MUST NOT be responded to by the server.
+              // In MCP HTTP transport, the server responds with HTTP 204 No Content and no body.
+              if (
+                parsed &&
+                typeof parsed === "object" &&
+                (parsed.id === undefined || parsed.id === null)
+              ) {
+                try {
+                  await activeInterceptor.handleMessage(parsed);
+                } catch {
+                  // In JSON-RPC 2.0 notifications do not emit error responses
+                }
+                res.writeHead(204);
+                res.end();
+                return;
+              }
+
               const result = await activeInterceptor.handleMessage(parsed);
               res.writeHead(200, { "Content-Type": "application/json" });
               res.end(JSON.stringify(result));

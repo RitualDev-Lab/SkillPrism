@@ -252,4 +252,88 @@ describe("Phase 3 (S3): Real-Time Dynamic Tool Change Notifications (tools/list_
     assert.ok(refreshedNames.includes("aws_s3_upload"));
     assert.equal(refreshedNames.length, 4);
   });
+
+  test("Phase 3: HTTP MCP endpoint returns HTTP 204 No Content for incoming notifications without id", async () => {
+    const { interceptor } = setupTestHarness();
+    const proxy = new SkillPrismProxyServer(interceptor);
+    await proxy.startHttp({ port: 0 });
+
+    const addr = proxy.getAddress();
+    assert.ok(addr);
+    const baseUrl = `http://127.0.0.1:${addr.port}`;
+
+    try {
+      // 1. Send initialized notification (no id)
+      const initNotifRes = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "notifications/initialized",
+        }),
+      });
+
+      assert.equal(initNotifRes.status, 204);
+      const text = await initNotifRes.text();
+      assert.equal(text, "");
+
+      // 2. Send cancelled notification with null id
+      const cancelNotifRes = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: null,
+          method: "notifications/cancelled",
+          params: { requestId: "abc-123" },
+        }),
+      });
+
+      assert.equal(cancelNotifRes.status, 204);
+      const cancelText = await cancelNotifRes.text();
+      assert.equal(cancelText, "");
+
+      // 3. Regular request with id must return 200 with JSON body
+      const reqRes = await fetch(`${baseUrl}/mcp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 42,
+          method: "tools/list",
+        }),
+      });
+
+      assert.equal(reqRes.status, 200);
+      const json = await reqRes.json();
+      assert.equal(json.id, 42);
+      assert.ok(Array.isArray(json.result.tools));
+    } finally {
+      await proxy.close();
+    }
+  });
+
+  test("Phase 3: McpProtocolInterceptor handles arbitrary notifications/* methods without -32601 error", async () => {
+    const { interceptor } = setupTestHarness();
+
+    const progressRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 201,
+      method: "notifications/progress",
+      params: { progress: 50, total: 100 },
+    });
+
+    assert.equal(progressRes.id, 201);
+    assert.ok(!progressRes.error);
+
+    const cancelRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 202,
+      method: "$/cancelRequest",
+      params: { id: 100 },
+    });
+
+    assert.equal(cancelRes.id, 202);
+    assert.ok(!cancelRes.error);
+  });
 });

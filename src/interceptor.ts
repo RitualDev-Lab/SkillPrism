@@ -279,7 +279,11 @@ export class McpProtocolInterceptor {
       }
 
       // Handle notifications (no response required or empty result)
-      if (method === "notifications/initialized" || method === "initialized") {
+      if (
+        method.startsWith("notifications/") ||
+        method === "initialized" ||
+        method === "$/cancelRequest"
+      ) {
         return {
           jsonrpc: "2.0",
           id: id ?? null,
