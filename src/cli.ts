@@ -3,6 +3,7 @@ import { DevShelfSync } from "./devshelf-sync.js";
 import { JitHarness } from "./harness.js";
 import { SkillIndex } from "./index-store.js";
 import { McpProtocolInterceptor } from "./interceptor.js";
+import { initProject } from "./init.js";
 import { SkillPrismProxyServer } from "./proxy-server.js";
 import type { SkillDefinition } from "./types.js";
 
@@ -101,74 +102,36 @@ async function main() {
   if (command === "init") {
     const isCursor = args.includes("--cursor") || (!args.includes("--claude") && !args.includes("--all"));
     const isClaude = args.includes("--claude") || args.includes("--all");
+    const isAll = args.includes("--all");
+    const isForce = args.includes("--force") || args.includes("--overwrite");
 
-    console.log("\n⚡ Initializing SkillPrism in current project...\n");
+    console.log("\n⚡ Initializing SkillPrism in current project (safe non-destructive mode)...\n");
 
-    if (isCursor || args.includes("--all")) {
-      const cursorRulesContent = `# SkillPrism Progressive Skill Disclosure & Context Compaction
-# Drop this into your repository to prevent 10,000+ token context window explosion
+    const result = await initProject({
+      cwd: process.cwd(),
+      cursor: isCursor,
+      claude: isClaude,
+      all: isAll,
+      force: isForce,
+    });
 
-You are paired with SkillPrism (https://skillprism.ritualdev.in).
-Instead of dumping full tool schemas or massive payload JSONs:
-1. Always search tools by intent via \`search_skills\` before executing unfamiliar actions.
-2. Load only the specific tool needed for the current step via \`load_skill\`.
-3. Read semantic receipts (\`receipt:...\`) via \`inspect_receipt\` rather than asking for full raw payload dumps.
-`;
-      await fs.writeFile(path.resolve(process.cwd(), ".cursorrules"), cursorRulesContent, "utf8");
-      console.log("✅ Created .cursorrules with SkillPrism optimization guidelines");
+    for (const backup of result.backupsCreated) {
+      console.log(`📦 Created backup of existing configuration at ${backup}`);
     }
 
-    if (isClaude || args.includes("--all")) {
-      const claudeMdContent = `# SkillPrism Configuration for Claude Code
-
-## Token & Context Optimization
-- **Proxy Command**: \`npx -y @ritualdev-lab/skillprism proxy --stdio\`
-- **Out-of-Context Tools**: Keep tool definitions in SkillPrism index to save 97.3% upfront token context.
-- **Semantic Receipts**: When operations return heavy payloads (> 512 bytes), inspect receipts rather than dumping raw JSON.
-`;
-      await fs.writeFile(path.resolve(process.cwd(), "CLAUDE.md"), claudeMdContent, "utf8");
-      console.log("✅ Created CLAUDE.md with Claude Code SkillPrism instructions");
+    for (const file of result.filesModified) {
+      console.log(`✅ Safely updated ${file} (managed section preserved)`);
     }
 
-    const mcpConfigPath = path.resolve(process.cwd(), ".mcp.json");
-    try {
-      let existingConfig: any = {};
-      let fileExisted = false;
+    for (const warning of result.warnings) {
+      console.warn(`⚠️ Warning: ${warning}`);
+    }
 
-      try {
-        const rawExisting = await fs.readFile(mcpConfigPath, "utf8");
-        fileExisted = true;
-        existingConfig = JSON.parse(rawExisting);
-        const backupPath = path.resolve(process.cwd(), ".mcp.json.bak");
-        await fs.writeFile(backupPath, rawExisting, "utf8");
-        console.log("📦 Created backup of existing config at .mcp.json.bak");
-      } catch (readErr: any) {
-        if (fileExisted) {
-          console.warn("⚠️ Warning: Existing .mcp.json was unparseable. Preserving raw file.");
-        }
+    if (result.errors.length > 0) {
+      for (const err of result.errors) {
+        console.error(`❌ Error: ${err}`);
       }
-
-      if (!existingConfig || typeof existingConfig !== "object") {
-        existingConfig = {};
-      }
-      if (!existingConfig.mcpServers || typeof existingConfig.mcpServers !== "object") {
-        existingConfig.mcpServers = {};
-      }
-
-      existingConfig.mcpServers.skillprism = {
-        command: "npx",
-        args: ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"],
-      };
-
-      await fs.writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2), "utf8");
-      if (fileExisted) {
-        const totalServers = Object.keys(existingConfig.mcpServers).length;
-        console.log(`✅ Safely patched .mcp.json: Preserved existing servers (Total: ${totalServers}) and configured skillprism`);
-      } else {
-        console.log("✅ Generated .mcp.json with stdio proxy configuration");
-      }
-    } catch (err: any) {
-      console.error(`❌ Failed to update .mcp.json: ${err.message}`);
+      process.exit(1);
     }
 
     console.log("\n🎉 SkillPrism integration complete! Start your agent to enjoy 97%+ context savings.\n");
