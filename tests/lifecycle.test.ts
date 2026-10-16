@@ -221,4 +221,47 @@ describe("Phase 4 (S4): Turn & Time-Based Gateway Lifecycle & Expiration Wiring 
     harness.stepTurn();
     assert.equal(harness.getActiveSkillCount(), 0); // now expired
   });
+
+  test("Proxy idle sweep automatically runs compactor.gc() and prunes expired semantic receipts from memory and disk", async () => {
+    const fs = await import("node:fs");
+    const os = await import("node:os");
+    const path = await import("node:path");
+
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillprism-sweep-gc-"));
+
+    try {
+      const { interceptor } = setupTestEnvironment(10, 1000);
+      const compactor = interceptor.getCompactor();
+      // Set short TTL for receipts (50ms), low byte threshold, and wire storageDir
+      compactor.setMaxByteThreshold(50);
+      (compactor as any).storageDir = tempDir;
+      (compactor as any).defaultTtlMs = 50;
+
+      const proxy = new SkillPrismProxyServer(interceptor);
+
+      // Create a heavy payload that gets compacted
+      const heavy = { data: "huge_payload_data_".repeat(100) };
+      const { receipt } = compactor.compact("test_tool", heavy, 50);
+      assert.ok(receipt);
+      assert.equal(compactor.getStats().activeCacheEntries, 1);
+
+      // Verify file exists on disk
+      const filename = `${receipt.ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+      assert.equal(fs.existsSync(path.join(tempDir, filename)), true);
+
+      // Start idle sweep (every 25ms)
+      proxy.startIdleSweep(25);
+
+      // Wait 100ms for receipt TTL expiry and background sweep GC to trigger
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Active cache entries should now be 0, and disk file deleted
+      assert.equal(compactor.getStats().activeCacheEntries, 0);
+      assert.equal(fs.existsSync(path.join(tempDir, filename)), false);
+
+      await proxy.close();
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });

@@ -444,11 +444,15 @@ export class SkillPrismProxyServer {
       // 1. Prune main harness
       this.interceptor.getHarness().pruneExpiredSkills();
 
-      // 2. Prune sessions and idle session harnesses
+      // 2. Prune expired semantic receipts in main compactor (memory & disk)
+      this.interceptor.getCompactor().gc();
+
+      // 3. Prune sessions and idle session harnesses & compactors
       const now = Date.now();
       const sessionTtlMs = 1000 * 60 * 15; // 15 minutes session inactivity
       for (const [id, session] of this.sessions.entries()) {
         session.interceptor.getHarness().pruneExpiredSkills();
+        session.interceptor.getCompactor().gc();
         if (now - session.lastActiveMs > sessionTtlMs) {
           this.sessions.delete(id);
         }
