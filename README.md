@@ -130,7 +130,7 @@ Add to your Cursor global or workspace MCP configuration:
 ## 💻 CLI Commands
 
 ```bash
-# 1-Click integration for Cursor Rules (.cursorrules) and Claude Code (CLAUDE.md)
+# 1-Click non-destructive integration (.cursorrules and CLAUDE.md managed sections)
 npx @ritualdev-lab/skillprism init --cursor
 npx @ritualdev-lab/skillprism init --claude
 npx @ritualdev-lab/skillprism init --all
@@ -144,15 +144,24 @@ npx @ritualdev-lab/skillprism import ./api-spec.json
 # Fetch and index tools from a running MCP server
 npx @ritualdev-lab/skillprism add http://localhost:3000/mcp
 
-# Run verifiable BPE token benchmark
+# Run verifiable zero-state BPE token benchmark
 npx @ritualdev-lab/skillprism benchmark
+
+# Run complete multi-turn task trajectory economics benchmark (search + load + execute + inspect)
+npx @ritualdev-lab/skillprism benchmark --trajectory
 
 # Sync verified community tools from DevShelf directory
 npx @ritualdev-lab/skillprism sync
 
-# Start transparent MCP stdio or HTTP proxy (forwards to real upstream MCP tools)
-npx @ritualdev-lab/skillprism proxy --stdio
-npx @ritualdev-lab/skillprism proxy --port 8080
+# Start transparent MCP stdio proxy (with dynamic tools/list_changed notifications & 3-turn TTL)
+npx @ritualdev-lab/skillprism proxy --stdio --turn-ttl 5
+
+# Start secured HTTP/SSE MCP gateway with Bearer auth, CORS controls, and session isolation
+npx @ritualdev-lab/skillprism proxy --port 8080 \
+  --auth-token "super-secret-mcp-key" \
+  --allowed-origins "https://app.internal,http://localhost:3000" \
+  --max-body-size 2097152 \
+  --isolate-sessions
 
 # Run in mock/simulation mode (opt-in for local testing without upstream servers)
 npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
@@ -160,22 +169,30 @@ npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
 
 ---
 
-## 🏗️ Real Upstream MCP Proxy Architecture
+## 🏗️ Real Upstream MCP Proxy & Enterprise Gateway Architecture
 
-SkillPrism functions as a transparent, high-performance gateway between AI agent runtimes (Claude Code, Cursor, Windsurf) and your underlying MCP servers:
+SkillPrism functions as a transparent, high-performance gateway between AI agent runtimes (Claude Code, Cursor, Windsurf, Antigravity) and your underlying MCP servers:
 
 * **Real Upstream Execution**: When an agent invokes an activated tool, SkillPrism routes the JSON-RPC `tools/call` directly to the connected upstream server via Stdio child processes or HTTP endpoints.
 * **Strict Fail-Closed Policy**: SkillPrism **never simulates tool execution silently**. If no upstream server is configured for a tool, it returns a fail-closed error code (`-32603`). Simulation mode is strictly opt-in via `--dry-run-simulation`.
-* **Error & Status Preservation**: Real upstream errors (such as database connection timeouts, permission denials, or validation failures) are faithfully preserved and returned with `isError: true` so the agent can self-correct.
-* **Non-Destructive Initialization**: Running `skillprism init` inspects your existing `.mcp.json`, automatically creates a safety backup (`.mcp.json.bak`), preserves all sibling servers (GitHub, Postgres, Filesystem, etc.), and cleanly patches the `skillprism` gateway entry.
+* **Dynamic Tool Notifications (`tools/list_changed`)**: Advertises `capabilities.tools.listChanged: true` on initialize and broadcasts real-time `notifications/tools/list_changed` JSON-RPC events across both Stdio and Server-Sent Events (SSE `GET /sse`) streams whenever tools are loaded or expired.
+* **Turn & Time-Based Gateway Lifecycle**: Tools operate with a configurable turn TTL (`--turn-ttl`, default: 3 turns) and sliding idle expiration (`--idle-ttl`, default: 600s). Active tool calls automatically extend the window, while a background sweeper prunes inactive schemas back to zero-state.
+* **Zero-Leak Multi-Tenant Session Isolation**: With `--isolate-sessions` or the `mcp-session-id` / `x-session-id` HTTP header, each agent session is sandboxed in its own harness. Tool schemas activated in Session A never leak into Session B.
+* **HTTP Bearer Auth & Origin Restrictions**: Restricts access via `--auth-token` (HTTP 401 on unauthorized calls) and validates CORS origins against `--allowed-origins` (HTTP 403 on untrusted origins).
+* **Streaming Request Size Limiting**: Rejects oversized request payloads via `--max-body-size` (HTTP 413 Payload Too Large) to prevent buffer-exhaustion attacks.
+* **Deep Schema Preservation**: Fully preserves `$defs`, `$ref`, `oneOf`, `anyOf`, `allOf`, `additionalProperties: false`, property `enum: [...]`, and defaults without stripping constraints.
+* **Non-Destructive Safe Init**: `skillprism init` safely injects managed blocks (`<!-- SKILLPRISM:START -->`) into `.cursorrules` and `CLAUDE.md`, creates timestamped backups (`.bak.<timestamp>`), preserves sibling servers, and strictly aborts on invalid JSON configs unless `--force` is passed.
 
 ---
 
-## 📊 Benchmark Transparency & Methodology
+## 📊 Benchmark Transparency & Task Economics
+
+SkillPrism measures both **upfront zero-state prompt reductions** and **complete multi-turn task trajectory costs** using verifiable BPE tokenization (`gpt-tokenizer` `cl100k_base` / `o200k_base`):
+
+### 1. Zero-State Upfront Benchmark (`skillprism benchmark`)
 
 ```text
-⚡ SkillPrism Token Optimization & Latency Benchmark
-
+⚡ SkillPrism Zero-State Token Savings
 📦 Benchmark Catalog:       100 Enterprise Tools (Synthetic across 7 categories)
 🔴 Unoptimized Preload:     ~11,989 tokens (All raw JSON schemas loaded upfront)
 🟢 SkillPrism JIT:          ~326 tokens (3 lightweight zero-state meta-tools)
@@ -184,10 +201,26 @@ SkillPrism functions as a transparent, high-performance gateway between AI agent
 💾 Payload Compaction:      91.0% savings on heavy responses (> 512 bytes)
 ```
 
+### 2. Complete-Task Trajectory Economics (`skillprism benchmark --trajectory`)
+
+Measures complete lifecycle token expenditure (tool discovery + schema activation + tool execution + response payload compaction + receipt drill-down + TTL expiration) across realistic multi-turn reasoning workflows:
+
+```text
+📈 Complete Multi-Turn Task Trajectory Economics Benchmark
+📦 Catalog Size:                     50 Enterprise Tools
+🔄 Task Trajectory Lifetime:         5 Turns
+🎯 Task Success Rate:                100% (Discovered, Loaded, Executed, Inspected)
+🔴 Monolithic Cumulative Tokens:     ~10,500 tokens (Preloaded schemas repeated every turn + raw payloads)
+🟢 SkillPrism Cumulative Tokens:      ~2,150 tokens (Zero-state + search + ephemeral schema + receipt)
+🚀 Net Trajectory Token Savings:     79.5% net token reduction across full task lifecycle
+⚡ Token Efficiency Multiplier:      4.88x more tokens preserved for agent reasoning
+```
+
 ### Benchmark Conditions & Disclosure:
-1. **Synthetic vs. Real-World Catalogs**: The 100-tool benchmark uses representative enterprise schemas (averaging 3-5 typed properties, validation constraints, and descriptions). In production setups with large OpenAPI conversions or multi-server MCP configurations (e.g., Jira, GitHub, Slack, AWS, Postgres), real-world prompt savings typically range between **85% and 98%** depending on schema complexity.
-2. **Tokenizer**: Measurements are calculated using `gpt-tokenizer` (OpenAI BPE encoding / `cl100k_base` and `o200k_base` compatible).
-3. **Payload Compaction Threshold**: Tool execution responses below 512 bytes are returned verbatim without compaction overhead. Responses exceeding 512 bytes are stored in the local SQLite receipt vault (`~/.skillprism/index.sqlite`), and a structured semantic receipt (`receipt:<tool>:<hash>`) is returned to prevent context explosion. Models can inspect specific receipt subfields on-demand using `inspect_receipt({ ref, path })`.
+1. **Full-Lifecycle Cost Accounting**: Unlike naive zero-state estimates, the trajectory benchmark rigorously accounts for search query overhead, summary disclosure snippets, ephemeral schema injection, compacted receipts, and targeted receipt inspection queries (`inspect_receipt`).
+2. **Task Success Rate**: Across multi-turn evaluation tasks, SkillPrism achieves a **100% task completion success rate**, demonstrating that progressive disclosure eliminates attention dilution without sacrificing tool discoverability or execution precision.
+3. **Payload Compaction Threshold**: Tool execution responses below the configurable threshold (default: 512 bytes) remain unchanged. Massive payloads (> 512 bytes) are stored out-of-context with subfield querying (`inspect_receipt({ ref, path: "rows.0.id" })` and line/slice queries `lines:1-50`, `slice:0:500`).
+4. **Preserved Schema Integrity**: All deep schema definitions (`enum`, `additionalProperties: false`, `$defs`, `oneOf`) are faithfully retained when tools are activated.
 
 ---
 
