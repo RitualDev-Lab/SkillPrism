@@ -19,6 +19,7 @@ export interface SkillParameter {
   description: string;
   required?: boolean;
   default?: any;
+  enum?: any[];
 }
 
 export interface SkillDefinition {
@@ -71,3 +72,21 @@ export interface IndexStats {
   averageSummaryLength: number;
   savedContextTokensEstimate: number;
 }
+
+export interface TaskTrajectoryMetrics {
+  catalogSize: number;
+  totalTurns: number;
+  taskSuccessRate: number;
+  monolithicTotalTokens: number;
+  monolithicSchemaTokensPerTurn: number;
+  monolithicRawPayloadTokens: number;
+  skillPrismTotalTokens: number;
+  skillPrismZeroStateTokens: number;
+  skillPrismActiveSchemaTokens: number;
+  skillPrismCompactedPayloadTokens: number;
+  skillPrismSearchOverheadTokens: number;
+  skillPrismInspectionTokens: number;
+  netTokenSavingsPercent: number;
+  tokenEfficiencyMultiplier: number;
+}
+

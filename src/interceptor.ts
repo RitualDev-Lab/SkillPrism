@@ -39,6 +39,7 @@ export function toMcpInputSchema(parameters: any): {
   type: "object";
   properties: Record<string, any>;
   required?: string[];
+  [key: string]: any;
 } {
   if (!parameters) {
     return {
@@ -49,12 +50,12 @@ export function toMcpInputSchema(parameters: any): {
 
   // If already an object schema
   if (typeof parameters === "object" && !Array.isArray(parameters)) {
-    const properties = parameters.properties || {};
-    const required = Array.isArray(parameters.required) ? parameters.required : [];
+    const { type: _type, properties = {}, required, ...rest } = parameters;
     return {
       type: "object",
-      properties,
-      ...(required.length > 0 ? { required } : {}),
+      properties: typeof properties === "object" && !Array.isArray(properties) ? properties : {},
+      ...(Array.isArray(required) && required.length > 0 ? { required } : {}),
+      ...rest,
     };
   }
 
@@ -72,6 +73,9 @@ export function toMcpInputSchema(parameters: any): {
         type: p.type || "string",
         ...(p.description ? { description: p.description } : {}),
         ...(p.default !== undefined ? { default: p.default } : {}),
+        ...(Array.isArray(p.enum) ? { enum: p.enum } : {}),
+        ...(p.items ? { items: p.items } : {}),
+        ...(p.properties ? { properties: p.properties } : {}),
       };
       if (p.required) {
         required.push(paramName);
@@ -192,11 +196,19 @@ export class McpProtocolInterceptor {
     this.upstreamExecutor = executor;
   }
 
+  public getUpstreamExecutor(): ToolExecutionHandler | undefined {
+    return this.upstreamExecutor;
+  }
+
   /**
    * Set or update upstream MCP server manager
    */
   public setUpstreamManager(manager: UpstreamManager): void {
     this.upstreamManager = manager;
+  }
+
+  public getUpstreamManager(): UpstreamManager | undefined {
+    return this.upstreamManager;
   }
 
   /**

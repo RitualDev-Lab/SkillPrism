@@ -209,6 +209,7 @@ export class SkillIndex {
           type: propDef.type || "string",
           description: cleanParamDesc,
           required: required.includes(propName),
+          ...(Array.isArray(propDef.enum) ? { enum: propDef.enum } : {}),
         });
       }
 
@@ -236,6 +237,7 @@ export class SkillIndex {
     }
     return count;
   }
+
   /**
    * Import tools from OpenAPI 3.0 / 3.1 specification (JSON string or object)
    */
@@ -266,6 +268,7 @@ export class SkillIndex {
               type: p.schema?.type || "string",
               description: (p.description || `Parameter ${p.name}`).slice(0, 120),
               required: Boolean(p.required),
+              ...(Array.isArray(p.schema?.enum) ? { enum: p.schema.enum } : {}),
             });
           }
         }
@@ -279,6 +282,7 @@ export class SkillIndex {
               type: propDef.type || "string",
               description: (propDef.description || `Body property ${propName}`).slice(0, 120),
               required: req.includes(propName),
+              ...(Array.isArray(propDef.enum) ? { enum: propDef.enum } : {}),
             });
           }
         }

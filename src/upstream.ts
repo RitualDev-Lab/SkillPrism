@@ -109,6 +109,40 @@ export class UpstreamManager {
   }
 
   /**
+   * Directly connect an HTTP upstream MCP server and optionally import its tools into SkillIndex
+   */
+  public async connectServer(
+    name: string,
+    url: string,
+    index?: SkillIndex,
+  ): Promise<string[]> {
+    const discoveredTools: string[] = [];
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+    });
+    const data: any = await res.json();
+    const tools = data?.result?.tools || [];
+    for (const t of tools) {
+      discoveredTools.push(t.name);
+      this.toolToServerMap.set(t.name, name);
+    }
+
+    this.servers.set(name, {
+      name,
+      config: { url },
+      tools: discoveredTools,
+    });
+
+    if (index) {
+      index.importFromMcp(tools);
+    }
+
+    return discoveredTools;
+  }
+
+  /**
    * Check if a tool is hosted by any registered upstream server
    */
   public hasTool(toolName: string): boolean {

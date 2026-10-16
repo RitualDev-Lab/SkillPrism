@@ -237,15 +237,37 @@ async function main() {
       });
     }
 
-    const metrics = BenchmarkEngine.runComparison(fullBenchmarkCatalog);
-    console.log(`📦 Catalog Size: ${metrics.catalogSize} Enterprise Tools`);
-    console.log(`🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`);
-    console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
-    console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
-    console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
-    console.log(
-      `💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`,
-    );
+    const isTrajectory = args.includes("--trajectory") || args.includes("--economics");
+
+    if (isTrajectory) {
+      console.log("\n📈 Running Complete Multi-Turn Task Trajectory Economics Benchmark...\n");
+      const trajectory = await BenchmarkEngine.runTrajectoryBenchmark(fullBenchmarkCatalog);
+      console.log(`📦 Catalog Size:                     ${trajectory.catalogSize} Enterprise Tools`);
+      console.log(`🔄 Task Trajectory Lifetime:         ${trajectory.totalTurns} Turns`);
+      console.log(`🎯 Task Success Rate:                 ${(trajectory.taskSuccessRate * 100).toFixed(0)}% (Discovered, Loaded, Executed, Inspected)`);
+      console.log(`🔴 Monolithic Cumulative Tokens:     ~${trajectory.monolithicTotalTokens} tokens`);
+      console.log(`   - Schema Preload Overhead:        ~${trajectory.monolithicSchemaTokensPerTurn * trajectory.totalTurns} tokens`);
+      console.log(`   - Raw Uncompacted Payloads:       ~${trajectory.monolithicRawPayloadTokens} tokens`);
+      console.log(`🟢 SkillPrism Cumulative Tokens:      ~${trajectory.skillPrismTotalTokens} tokens`);
+      console.log(`   - Zero-State Meta-Tools:          ~${trajectory.skillPrismZeroStateTokens} tokens`);
+      console.log(`   - Search & Load Discovery:        ~${trajectory.skillPrismSearchOverheadTokens} tokens`);
+      console.log(`   - Active Tool Ephemeral Schema:   ~${trajectory.skillPrismActiveSchemaTokens} tokens`);
+      console.log(`   - Compacted Semantic Receipt:     ~${trajectory.skillPrismCompactedPayloadTokens} tokens`);
+      console.log(`   - Receipt Inspection Queries:     ~${trajectory.skillPrismInspectionTokens} tokens`);
+      console.log(`🚀 Net Trajectory Token Savings:     ${trajectory.netTokenSavingsPercent}%`);
+      console.log(`⚡ Token Efficiency Multiplier:      ${trajectory.tokenEfficiencyMultiplier}x\n`);
+    } else {
+      const metrics = BenchmarkEngine.runComparison(fullBenchmarkCatalog);
+      console.log(`📦 Catalog Size: ${metrics.catalogSize} Enterprise Tools`);
+      console.log(`🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`);
+      console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
+      console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
+      console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
+      console.log(
+        `💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`,
+      );
+      console.log("💡 Tip: Run 'skillprism benchmark --trajectory' to measure complete multi-turn lifecycle economics.\n");
+    }
   } else if (command === "sync") {
     console.log("\n🌐 Ingesting Tools into Out-of-Context Index...\n");
     const res = await DevShelfSync.syncToCatalog(index);
@@ -265,6 +287,25 @@ async function main() {
     const isStdio = args.includes("--stdio");
     const isSimulate = args.includes("--dry-run-simulation") || args.includes("--simulate");
     const noTurnAdvance = args.includes("--no-turn-advance");
+    const isolateSessions = args.includes("--isolate-sessions");
+
+    let authToken: string | undefined;
+    const authIdx = args.indexOf("--auth-token");
+    if (authIdx !== -1 && args[authIdx + 1]) {
+      authToken = args[authIdx + 1];
+    }
+
+    let allowedOrigins: string[] | undefined;
+    const originsIdx = args.indexOf("--allowed-origins");
+    if (originsIdx !== -1 && args[originsIdx + 1]) {
+      allowedOrigins = args[originsIdx + 1].split(",").map((s) => s.trim());
+    }
+
+    let maxBodySizeBytes: number | undefined;
+    const maxSizeIdx = args.indexOf("--max-body-size");
+    if (maxSizeIdx !== -1 && args[maxSizeIdx + 1]) {
+      maxBodySizeBytes = Number.parseInt(args[maxSizeIdx + 1], 10) || undefined;
+    }
 
     let turnTtl = 3;
     const turnTtlIdx = args.indexOf("--turn-ttl");
@@ -329,7 +370,19 @@ async function main() {
       if (isSimulate) {
         console.log("🧪 Running in simulation mode (--dry-run-simulation enabled)");
       }
-      await proxy.startHttp({ port });
+      if (authToken) {
+        console.log("🔒 HTTP Bearer Authentication enabled");
+      }
+      if (isolateSessions) {
+        console.log("👥 Multi-tenant Session Isolation enabled");
+      }
+      await proxy.startHttp({
+        port,
+        authToken,
+        allowedOrigins,
+        maxBodySizeBytes,
+        enableSessionIsolation: isolateSessions,
+      });
     }
   } else if (command === "stats") {
     const stats = index.getStats();
@@ -344,13 +397,17 @@ USAGE:
   skillprism search <intent>               Search out-of-context tool index by intent
   skillprism add <mcp-endpoint>            Fetch & register tools from remote MCP server
   skillprism import <openapi.json>         Convert OpenAPI 3.0 or JSON catalog into tools
-  skillprism benchmark                     Run comparative token savings & latency benchmark
+  skillprism benchmark [--trajectory]      Run token savings & multi-turn trajectory economics benchmark
   skillprism sync                          Ingest community tools into out-of-context index
   skillprism proxy [--stdio|--port 8080]   Start transparent MCP proxy (forwards to real upstream tools)
                    [--turn-ttl <N>]        Turns before inactive tools expire (default: 3)
                    [--idle-ttl <seconds>]  Seconds before inactive tools expire (default: 600)
                    [--no-turn-advance]     Disable automatic turn advancement on tool execution
                    [--dry-run-simulation]  Opt into simulated execution for local mock testing
+                   [--auth-token <token>]  Require HTTP Bearer Token authentication
+                   [--allowed-origins <s>] Comma-separated allowed CORS origins
+                   [--max-body-size <N>]   Maximum HTTP payload size in bytes (default: 2MB)
+                   [--isolate-sessions]    Enable multi-tenant session isolation (mcp-session-id)
                    [--config <file>]       Path to custom MCP servers config (default: .mcp.json)
   skillprism stats                         Inspect catalog token savings and metrics
 
@@ -358,7 +415,7 @@ EXAMPLES:
   $ npx @ritualdev-lab/skillprism init --cursor
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
   $ npx @ritualdev-lab/skillprism proxy --stdio --turn-ttl 5
-  $ npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
+  $ npx @ritualdev-lab/skillprism proxy --port 8080 --auth-token secret-token --dry-run-simulation
 `);
   }
 }

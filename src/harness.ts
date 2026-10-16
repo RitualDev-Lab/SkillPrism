@@ -12,7 +12,8 @@ export interface MetaToolDefinition {
   parameters: {
     type: "object";
     properties: Record<string, any>;
-    required: string[];
+    required?: string[];
+    [key: string]: any;
   };
 }
 
@@ -64,6 +65,10 @@ export class JitHarness {
 
   public getDefaultIdleTtlMs(): number {
     return this.defaultIdleTtlMs;
+  }
+
+  public getIndex(): SkillIndex {
+    return this.index;
   }
 
   /**
@@ -272,11 +277,7 @@ export class JitHarness {
       return {
         name: skill.id,
         description: skill.description || skill.summary,
-        parameters: {
-          type: "object",
-          properties: normalized.properties,
-          required: normalized.required || [],
-        },
+        parameters: normalized,
       };
     }
 
@@ -287,6 +288,8 @@ export class JitHarness {
       properties[param.name] = {
         type: param.type,
         description: param.description,
+        ...(Array.isArray(param.enum) ? { enum: param.enum } : {}),
+        ...(param.default !== undefined ? { default: param.default } : {}),
       };
       if (param.required) {
         required.push(param.name);
