@@ -21,6 +21,14 @@ export interface JsonRpcResponse {
   };
 }
 
+export interface JsonRpcNotification {
+  jsonrpc: "2.0";
+  method: string;
+  params?: any;
+}
+
+export type NotificationListener = (notification: JsonRpcNotification) => void;
+
 export type ToolExecutionHandler = (name: string, args: Record<string, any>) => Promise<any>;
 
 /**
@@ -97,6 +105,8 @@ export class McpProtocolInterceptor {
   private simulationMode = false;
 
   private clientPermissions: Set<string> = new Set(["*"]);
+  private notificationListeners: NotificationListener[] = [];
+  private unsubscribeHarness?: () => void;
 
   constructor(
     harness: JitHarness,
@@ -112,6 +122,46 @@ export class McpProtocolInterceptor {
     this.compactor = compactor || new ContextCompactor();
     this.clientPermissions = new Set(initialPermissions);
     this.simulationMode = simulationMode;
+
+    // Automatically emit notifications/tools/list_changed whenever harness activates or prunes tools
+    this.unsubscribeHarness = this.harness.onToolsChanged(() => {
+      this.notifyToolsListChanged();
+    });
+  }
+
+  /**
+   * Subscribe to outgoing MCP JSON-RPC notifications (e.g. notifications/tools/list_changed)
+   */
+  public onNotification(listener: NotificationListener): () => void {
+    this.notificationListeners.push(listener);
+    return () => {
+      this.notificationListeners = this.notificationListeners.filter((l) => l !== listener);
+    };
+  }
+
+  /**
+   * Dispatches an outgoing MCP notification to all registered transport streams
+   */
+  public emitNotification(method: string, params: any = {}): void {
+    const notification: JsonRpcNotification = {
+      jsonrpc: "2.0",
+      method,
+      params,
+    };
+    for (const listener of this.notificationListeners) {
+      try {
+        listener(notification);
+      } catch {
+        // Guard against listener failure
+      }
+    }
+  }
+
+  /**
+   * Dispatches notifications/tools/list_changed according to Model Context Protocol specification
+   */
+  public notifyToolsListChanged(): void {
+    this.emitNotification("notifications/tools/list_changed", {});
   }
 
   public setGrantedPermissions(permissions: string[]): void {

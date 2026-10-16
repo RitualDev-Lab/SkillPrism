@@ -43,10 +43,34 @@ export class JitHarness {
   private currentTurn = 1;
   private activeSkills: Map<string, ActivatedSkillTurn> = new Map();
   private defaultTtlTurns: number;
+  private onToolsChangedListeners: Array<() => void> = [];
 
   constructor(index: SkillIndex, defaultTtlTurns = 3) {
     this.index = index;
     this.defaultTtlTurns = defaultTtlTurns;
+  }
+
+  /**
+   * Register a listener invoked whenever active tool definitions are added or pruned
+   */
+  public onToolsChanged(listener: () => void): () => void {
+    this.onToolsChangedListeners.push(listener);
+    return () => {
+      this.onToolsChangedListeners = this.onToolsChangedListeners.filter((l) => l !== listener);
+    };
+  }
+
+  /**
+   * Emit notification to all subscribed listeners that the tool registry has changed
+   */
+  public emitToolsChanged(): void {
+    for (const listener of this.onToolsChangedListeners) {
+      try {
+        listener();
+      } catch {
+        // Guard against listener exceptions
+      }
+    }
   }
 
   /**
@@ -197,6 +221,9 @@ export class JitHarness {
         expiresAtTurn: this.currentTurn + this.defaultTtlTurns,
       });
 
+      // Emit change notification to dynamic MCP clients
+      this.emitToolsChanged();
+
       return {
         tool: name,
         status: "success",
@@ -258,6 +285,27 @@ export class JitHarness {
   }
 
   /**
+   * Unload a specific skill manually and notify listeners
+   */
+  public unloadSkill(skillId: string): boolean {
+    const deleted = this.activeSkills.delete(skillId);
+    if (deleted) {
+      this.emitToolsChanged();
+    }
+    return deleted;
+  }
+
+  /**
+   * Reset all active ephemeral skills
+   */
+  public reset(): void {
+    if (this.activeSkills.size > 0) {
+      this.activeSkills.clear();
+      this.emitToolsChanged();
+    }
+  }
+
+  /**
    * Advance turn counter & prune skills whose TTL has expired
    */
   public stepTurn(): number {
@@ -275,11 +323,17 @@ export class JitHarness {
     return this.activeSkills.size;
   }
 
-  private pruneExpiredSkills(): void {
+  private pruneExpiredSkills(): number {
+    let pruned = 0;
     for (const [id, active] of this.activeSkills.entries()) {
       if (this.currentTurn >= active.expiresAtTurn) {
         this.activeSkills.delete(id);
+        pruned++;
       }
     }
+    if (pruned > 0) {
+      this.emitToolsChanged();
+    }
+    return pruned;
   }
 }
