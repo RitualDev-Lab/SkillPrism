@@ -178,6 +178,114 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
       params: { protocolVersion: "2025-03-26" },
     });
     assert.equal(initRes.result.protocolVersion, "2025-03-26");
-    assert.equal(initRes.result.serverInfo.version, "1.1.1");
+    assert.equal(initRes.result.serverInfo.version, "1.2.3");
+  });
+
+  test("tools/list returns valid MCP JSON Schema format (type: 'object', properties, required)", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+
+    // Activate aws_s3_upload
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const listRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 101,
+      method: "tools/list",
+    });
+
+    assert.equal(listRes.id, 101);
+    const tools = listRes.result?.tools;
+    assert.ok(Array.isArray(tools));
+
+    for (const tool of tools) {
+      assert.ok(tool.name, "Tool must have name");
+      assert.ok(tool.description, "Tool must have description");
+      assert.equal(typeof tool.inputSchema, "object", "inputSchema must be an object");
+      assert.equal(Array.isArray(tool.inputSchema), false, "inputSchema must not be an array");
+      assert.equal(tool.inputSchema.type, "object", "inputSchema.type must be 'object'");
+      assert.equal(typeof tool.inputSchema.properties, "object", "inputSchema.properties must be an object");
+    }
+
+    const s3Tool = tools.find((t: any) => t.name === "aws_s3_upload");
+    assert.ok(s3Tool);
+    assert.equal(s3Tool.inputSchema.type, "object");
+    assert.ok(s3Tool.inputSchema.properties.bucket);
+    assert.ok(s3Tool.inputSchema.properties.key);
+    assert.deepEqual(s3Tool.inputSchema.required, ["bucket", "key"]);
+  });
+
+  test("fails closed when no upstream executor is configured and simulation is disabled", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+
+    // Activate skill
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    // Call tool with NO upstream executor and simulation disabled (default)
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 102,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "my-bucket", key: "file.txt" },
+      },
+    });
+
+    assert.equal(callRes.id, 102);
+    assert.ok(callRes.error, "Must return JSON-RPC error");
+    assert.equal(callRes.error.code, -32603);
+    assert.match(callRes.error.message, /No upstream executor or MCP server connected/);
+    assert.match(callRes.error.message, /--dry-run-simulation/);
+  });
+
+  test("allows simulated execution when --dry-run-simulation is explicitly enabled", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+    interceptor.setSimulationMode(true);
+
+    // Activate skill
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 103,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "my-bucket", key: "file.txt" },
+      },
+    });
+
+    assert.equal(callRes.id, 103);
+    assert.ok(!callRes.error);
+    const parsed = JSON.parse(callRes.result.content[0].text);
+    assert.equal(parsed.status, "simulated");
+    assert.equal(parsed.dryRun, true);
+    assert.equal(parsed.skill, "aws_s3_upload");
+    assert.ok(parsed.notice.includes("--dry-run-simulation"));
+  });
+
+  test("faithfully preserves upstream tool errors when execution fails", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+
+    // Configure upstream executor that throws
+    interceptor.setUpstreamExecutor(async () => {
+      throw new Error("S3 AccessDenied: Bucket production-backups is private");
+    });
+
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 104,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "production-backups", key: "secret.pem" },
+      },
+    });
+
+    assert.equal(callRes.id, 104);
+    assert.equal(callRes.result?.isError, true);
+    assert.match(callRes.result?.content[0]?.text, /S3 AccessDenied/);
   });
 });

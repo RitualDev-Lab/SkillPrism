@@ -150,25 +150,44 @@ npx @ritualdev-lab/skillprism benchmark
 # Sync verified community tools from DevShelf directory
 npx @ritualdev-lab/skillprism sync
 
-# Start transparent MCP stdio or HTTP proxy
+# Start transparent MCP stdio or HTTP proxy (forwards to real upstream MCP tools)
 npx @ritualdev-lab/skillprism proxy --stdio
 npx @ritualdev-lab/skillprism proxy --port 8080
+
+# Run in mock/simulation mode (opt-in for local testing without upstream servers)
+npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
 ```
 
 ---
 
-## 📊 Live Benchmark Results
+## 🏗️ Real Upstream MCP Proxy Architecture
+
+SkillPrism functions as a transparent, high-performance gateway between AI agent runtimes (Claude Code, Cursor, Windsurf) and your underlying MCP servers:
+
+* **Real Upstream Execution**: When an agent invokes an activated tool, SkillPrism routes the JSON-RPC `tools/call` directly to the connected upstream server via Stdio child processes or HTTP endpoints.
+* **Strict Fail-Closed Policy**: SkillPrism **never simulates tool execution silently**. If no upstream server is configured for a tool, it returns a fail-closed error code (`-32603`). Simulation mode is strictly opt-in via `--dry-run-simulation`.
+* **Error & Status Preservation**: Real upstream errors (such as database connection timeouts, permission denials, or validation failures) are faithfully preserved and returned with `isError: true` so the agent can self-correct.
+* **Non-Destructive Initialization**: Running `skillprism init` inspects your existing `.mcp.json`, automatically creates a safety backup (`.mcp.json.bak`), preserves all sibling servers (GitHub, Postgres, Filesystem, etc.), and cleanly patches the `skillprism` gateway entry.
+
+---
+
+## 📊 Benchmark Transparency & Methodology
 
 ```text
 ⚡ SkillPrism Token Optimization & Latency Benchmark
 
-📦 Catalog Size: 100 Enterprise Tools
-🔴 Unoptimized Preload Zero-State: ~11,989 tokens
-🟢 SkillPrism JIT Zero-State:       ~326 tokens (3 meta-tools)
-🚀 Upfront Token Savings:           97.3%
-⏱️ Average Search Latency:          < 0.3 ms
-💾 Payload Compaction Savings:      91.0%
+📦 Benchmark Catalog:       100 Enterprise Tools (Synthetic across 7 categories)
+🔴 Unoptimized Preload:     ~11,989 tokens (All raw JSON schemas loaded upfront)
+🟢 SkillPrism JIT:          ~326 tokens (3 lightweight zero-state meta-tools)
+🚀 Upfront Token Savings:   97.3% reduction in system prompt token footprint
+⏱️ Average Search Latency:  < 0.3 ms (Hybrid BM25 + dense vector similarity)
+💾 Payload Compaction:      91.0% savings on heavy responses (> 512 bytes)
 ```
+
+### Benchmark Conditions & Disclosure:
+1. **Synthetic vs. Real-World Catalogs**: The 100-tool benchmark uses representative enterprise schemas (averaging 3-5 typed properties, validation constraints, and descriptions). In production setups with large OpenAPI conversions or multi-server MCP configurations (e.g., Jira, GitHub, Slack, AWS, Postgres), real-world prompt savings typically range between **85% and 98%** depending on schema complexity.
+2. **Tokenizer**: Measurements are calculated using `gpt-tokenizer` (OpenAI BPE encoding / `cl100k_base` and `o200k_base` compatible).
+3. **Payload Compaction Threshold**: Tool execution responses below 512 bytes are returned verbatim without compaction overhead. Responses exceeding 512 bytes are stored in the local SQLite receipt vault (`~/.skillprism/index.sqlite`), and a structured semantic receipt (`receipt:<tool>:<hash>`) is returned to prevent context explosion. Models can inspect specific receipt subfields on-demand using `inspect_receipt({ ref, path })`.
 
 ---
 

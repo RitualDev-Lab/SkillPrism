@@ -1,6 +1,7 @@
 import { ContextCompactor } from "./compactor.js";
 import type { JitHarness } from "./harness.js";
 import type { SkillIndex } from "./index-store.js";
+import type { UpstreamManager } from "./upstream.js";
 
 export interface JsonRpcRequest {
   jsonrpc: "2.0";
@@ -23,15 +24,77 @@ export interface JsonRpcResponse {
 export type ToolExecutionHandler = (name: string, args: Record<string, any>) => Promise<any>;
 
 /**
+ * Normalizes any parameter definition or schema into a strict, standard
+ * Model Context Protocol (MCP) JSON Schema object.
+ */
+export function toMcpInputSchema(parameters: any): {
+  type: "object";
+  properties: Record<string, any>;
+  required?: string[];
+} {
+  if (!parameters) {
+    return {
+      type: "object",
+      properties: {},
+    };
+  }
+
+  // If already an object schema
+  if (typeof parameters === "object" && !Array.isArray(parameters)) {
+    const properties = parameters.properties || {};
+    const required = Array.isArray(parameters.required) ? parameters.required : [];
+    return {
+      type: "object",
+      properties,
+      ...(required.length > 0 ? { required } : {}),
+    };
+  }
+
+  // If parameters is an array of parameter descriptors (e.g. SkillParameter[])
+  if (Array.isArray(parameters)) {
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    for (const p of parameters) {
+      if (!p || typeof p !== "object") continue;
+      const paramName = p.name || p.id;
+      if (!paramName) continue;
+
+      properties[paramName] = {
+        type: p.type || "string",
+        ...(p.description ? { description: p.description } : {}),
+        ...(p.default !== undefined ? { default: p.default } : {}),
+      };
+      if (p.required) {
+        required.push(paramName);
+      }
+    }
+
+    return {
+      type: "object",
+      properties,
+      ...(required.length > 0 ? { required } : {}),
+    };
+  }
+
+  return {
+    type: "object",
+    properties: {},
+  };
+}
+
+/**
  * McpProtocolInterceptor
  * Transparent JSON-RPC proxy sitting between the LLM client (Claude Code, Cursor, Windsurf)
- * and upstream tool executors / MCP servers.
+ * and upstream tool executors / real MCP servers.
  */
 export class McpProtocolInterceptor {
   private harness: JitHarness;
   private index: SkillIndex;
   private compactor: ContextCompactor;
   private upstreamExecutor?: ToolExecutionHandler;
+  private upstreamManager?: UpstreamManager;
+  private simulationMode = false;
 
   private clientPermissions: Set<string> = new Set(["*"]);
 
@@ -41,12 +104,14 @@ export class McpProtocolInterceptor {
     upstreamExecutor?: ToolExecutionHandler,
     compactor?: ContextCompactor,
     initialPermissions: string[] = ["*"],
+    simulationMode = false,
   ) {
     this.harness = harness;
     this.index = index;
     this.upstreamExecutor = upstreamExecutor;
     this.compactor = compactor || new ContextCompactor();
     this.clientPermissions = new Set(initialPermissions);
+    this.simulationMode = simulationMode;
   }
 
   public setGrantedPermissions(permissions: string[]): void {
@@ -62,6 +127,61 @@ export class McpProtocolInterceptor {
    */
   public setUpstreamExecutor(executor: ToolExecutionHandler): void {
     this.upstreamExecutor = executor;
+  }
+
+  /**
+   * Set or update upstream MCP server manager
+   */
+  public setUpstreamManager(manager: UpstreamManager): void {
+    this.upstreamManager = manager;
+  }
+
+  /**
+   * Set whether mock simulation mode is allowed when no upstream executor is connected
+   */
+  public setSimulationMode(enabled: boolean): void {
+    this.simulationMode = enabled;
+  }
+
+  public isSimulationMode(): boolean {
+    return this.simulationMode;
+  }
+
+  private formatToolResult(id: string | number, toolName: string, rawOutput: any): JsonRpcResponse {
+    // If output is already in MCP result format
+    if (rawOutput && typeof rawOutput === "object" && (rawOutput.content || rawOutput.isError !== undefined)) {
+      if (rawOutput.isError) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            isError: true,
+            content: rawOutput.content || [{ type: "text", text: "Upstream tool reported an error" }],
+          },
+        };
+      }
+      if (Array.isArray(rawOutput.content)) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: rawOutput,
+        };
+      }
+    }
+
+    const { output } = this.compactor.compact(toolName, rawOutput);
+    return {
+      jsonrpc: "2.0",
+      id,
+      result: {
+        content: [
+          {
+            type: "text",
+            text: typeof output === "string" ? output : JSON.stringify(output, null, 2),
+          },
+        ],
+      },
+    };
   }
 
   /**
@@ -102,19 +222,19 @@ export class McpProtocolInterceptor {
             },
             serverInfo: {
               name: "SkillPrism Progressive JIT Gateway",
-              version: "1.1.1",
+              version: "1.2.3",
             },
           },
         };
       }
 
-      // 2. Intercept tools/list: Return only JIT meta-tools + actively loaded tools
+      // 2. Intercept tools/list: Return only JIT meta-tools + actively loaded tools with valid JSON Schema
       if (method === "tools/list") {
         const activeTools = this.harness.getActiveTools();
         const mcpFormattedTools = activeTools.map((t) => ({
           name: t.name,
           description: t.description,
-          inputSchema: t.parameters,
+          inputSchema: toMcpInputSchema((t as any).inputSchema || t.parameters),
         }));
 
         return {
@@ -249,9 +369,56 @@ export class McpProtocolInterceptor {
           }
         }
 
+        // 1. Direct Upstream Executor
         if (this.upstreamExecutor) {
-          const rawOutput = await this.upstreamExecutor(toolName, toolArgs);
-          const { output } = this.compactor.compact(toolName, rawOutput);
+          try {
+            const rawOutput = await this.upstreamExecutor(toolName, toolArgs);
+            return this.formatToolResult(id, toolName, rawOutput);
+          } catch (execErr: any) {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                isError: true,
+                content: [
+                  {
+                    type: "text",
+                    text: `Upstream tool execution error: ${execErr.message || String(execErr)}`,
+                  },
+                ],
+              },
+            };
+          }
+        }
+
+        // 2. Upstream MCP Server via UpstreamManager
+        if (this.upstreamManager?.hasTool(toolName)) {
+          try {
+            const upstreamResult = await this.upstreamManager.callTool(
+              toolName,
+              toolArgs,
+              skill.sourceServer,
+            );
+            return this.formatToolResult(id, toolName, upstreamResult);
+          } catch (upstreamErr: any) {
+            return {
+              jsonrpc: "2.0",
+              id,
+              result: {
+                isError: true,
+                content: [
+                  {
+                    type: "text",
+                    text: `Upstream MCP server error: ${upstreamErr.message || String(upstreamErr)}`,
+                  },
+                ],
+              },
+            };
+          }
+        }
+
+        // 3. Fallback: Simulation mode explicitly opted in via --dry-run-simulation
+        if (this.simulationMode) {
           return {
             jsonrpc: "2.0",
             id,
@@ -259,29 +426,32 @@ export class McpProtocolInterceptor {
               content: [
                 {
                   type: "text",
-                  text: typeof output === "string" ? output : JSON.stringify(output, null, 2),
+                  text: JSON.stringify(
+                    {
+                      status: "simulated",
+                      dryRun: true,
+                      skill: toolName,
+                      inputs: toolArgs,
+                      timestamp: new Date().toISOString(),
+                      notice:
+                        "Simulated execution (--dry-run-simulation is enabled). No upstream server was invoked.",
+                    },
+                    null,
+                    2,
+                  ),
                 },
               ],
             },
           };
         }
 
-        // Fallback simulated execution for mock/local harness
+        // 4. Default Fail-Closed: Never fake execution silently!
         return {
           jsonrpc: "2.0",
           id,
-          result: {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({
-                  status: "executed",
-                  skill: toolName,
-                  inputs: toolArgs,
-                  timestamp: new Date().toISOString(),
-                }),
-              },
-            ],
+          error: {
+            code: -32603,
+            message: `Tool execution failed: No upstream executor or MCP server connected for tool '${toolName}'. Pass --dry-run-simulation if you intend to mock tool execution.`,
           },
         };
       }

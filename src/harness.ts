@@ -1,4 +1,5 @@
 import type { SkillIndex } from "./index-store.js";
+import { toMcpInputSchema } from "./interceptor.js";
 import type { SkillDefinition } from "./types.js";
 
 /**
@@ -220,10 +221,15 @@ export class JitHarness {
    */
   public convertToToolDefinition(skill: SkillDefinition): MetaToolDefinition {
     if (skill.rawSchema) {
+      const normalized = toMcpInputSchema(skill.rawSchema);
       return {
         name: skill.id,
         description: skill.description || skill.summary,
-        parameters: skill.rawSchema as any,
+        parameters: {
+          type: "object",
+          properties: normalized.properties,
+          required: normalized.required || [],
+        },
       };
     }
 

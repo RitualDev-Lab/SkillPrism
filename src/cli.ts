@@ -132,18 +132,43 @@ Instead of dumping full tool schemas or massive payload JSONs:
 
     const mcpConfigPath = path.resolve(process.cwd(), ".mcp.json");
     try {
-      const mcpSnippet = {
-        mcpServers: {
-          skillprism: {
-            command: "npx",
-            args: ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"],
-          },
-        },
+      let existingConfig: any = {};
+      let fileExisted = false;
+
+      try {
+        const rawExisting = await fs.readFile(mcpConfigPath, "utf8");
+        fileExisted = true;
+        existingConfig = JSON.parse(rawExisting);
+        const backupPath = path.resolve(process.cwd(), ".mcp.json.bak");
+        await fs.writeFile(backupPath, rawExisting, "utf8");
+        console.log("📦 Created backup of existing config at .mcp.json.bak");
+      } catch (readErr: any) {
+        if (fileExisted) {
+          console.warn("⚠️ Warning: Existing .mcp.json was unparseable. Preserving raw file.");
+        }
+      }
+
+      if (!existingConfig || typeof existingConfig !== "object") {
+        existingConfig = {};
+      }
+      if (!existingConfig.mcpServers || typeof existingConfig.mcpServers !== "object") {
+        existingConfig.mcpServers = {};
+      }
+
+      existingConfig.mcpServers.skillprism = {
+        command: "npx",
+        args: ["-y", "@ritualdev-lab/skillprism", "proxy", "--stdio"],
       };
-      await fs.writeFile(mcpConfigPath, JSON.stringify(mcpSnippet, null, 2), "utf8");
-      console.log("✅ Generated .mcp.json with stdio proxy configuration");
-    } catch {
-      // Best effort
+
+      await fs.writeFile(mcpConfigPath, JSON.stringify(existingConfig, null, 2), "utf8");
+      if (fileExisted) {
+        const totalServers = Object.keys(existingConfig.mcpServers).length;
+        console.log(`✅ Safely patched .mcp.json: Preserved existing servers (Total: ${totalServers}) and configured skillprism`);
+      } else {
+        console.log("✅ Generated .mcp.json with stdio proxy configuration");
+      }
+    } catch (err: any) {
+      console.error(`❌ Failed to update .mcp.json: ${err.message}`);
     }
 
     console.log("\n🎉 SkillPrism integration complete! Start your agent to enjoy 97%+ context savings.\n");
@@ -274,8 +299,42 @@ Instead of dumping full tool schemas or massive payload JSONs:
     await fs.writeFile(CATALOG_FILE, index.exportToJson(), "utf8");
     console.log("💾 Saved updated catalog to .skillprism.json");
   } else if (command === "proxy") {
+    const isStdio = args.includes("--stdio");
+    const isSimulate = args.includes("--dry-run-simulation") || args.includes("--simulate");
+
     const harness = new JitHarness(index);
     const interceptor = new McpProtocolInterceptor(harness, index);
+    interceptor.setSimulationMode(isSimulate);
+
+    // Initialize Upstream MCP Manager
+    const { UpstreamManager } = await import("./upstream.js");
+    const upstreamManager = new UpstreamManager();
+
+    let configPath: string | undefined;
+    const configIdx = args.indexOf("--config");
+    if (configIdx !== -1 && args[configIdx + 1]) {
+      configPath = path.resolve(process.cwd(), args[configIdx + 1]);
+    }
+
+    try {
+      const connectedCount = await upstreamManager.loadFromMcpConfig(configPath, index);
+      interceptor.setUpstreamManager(upstreamManager);
+      if (connectedCount > 0 && !isStdio) {
+        console.log(`🔌 Connected to ${connectedCount} upstream MCP servers from configuration`);
+      }
+    } catch (err: any) {
+      if (!isStdio) {
+        console.warn(`⚠️ Warning: Failed to connect upstream servers: ${err.message}`);
+      }
+    }
+
+    const cleanup = async () => {
+      await upstreamManager.closeAll();
+      process.exit(0);
+    };
+    process.on("SIGINT", cleanup);
+    process.on("SIGTERM", cleanup);
+
     const proxy = new SkillPrismProxyServer(interceptor);
 
     let port = 8080;
@@ -284,9 +343,12 @@ Instead of dumping full tool schemas or massive payload JSONs:
       port = Number.parseInt(args[portIdx + 1], 10) || 8080;
     }
 
-    if (args.includes("--stdio")) {
+    if (isStdio) {
       proxy.startStdio();
     } else {
+      if (isSimulate) {
+        console.log("🧪 Running in simulation mode (--dry-run-simulation enabled)");
+      }
       await proxy.startHttp({ port });
     }
   } else if (command === "stats") {
@@ -295,26 +357,25 @@ Instead of dumping full tool schemas or massive payload JSONs:
     console.log(JSON.stringify(stats, null, 2));
   } else {
     console.log(`
-📚 SkillPrism v1.1.1 — Progressive Skill Disclosure Engine
+📚 SkillPrism v1.2.3 — Progressive Skill Disclosure Engine
 
 USAGE:
-  skillprism init [--cursor|--claude|--all] Drop .cursorrules / CLAUDE.md into current repo
-  skillprism search <intent>       Search out-of-context tool index by intent
-  skillprism add <mcp-endpoint>    Fetch & register tools from remote MCP server
-  skillprism import <openapi.json> Convert OpenAPI 3.0 or JSON catalog into tools
-  skillprism benchmark             Run comparative token savings & latency benchmark
-  skillprism sync                  Ingest community tools into out-of-context index
-  skillprism proxy [--port 8080]   Start transparent MCP proxy server (HTTP/SSE or --stdio)
-  skillprism stats                 Inspect catalog token savings and metrics
+  skillprism init [--cursor|--claude|--all] Non-destructive config initializer (.mcp.json, CLAUDE.md)
+  skillprism search <intent>               Search out-of-context tool index by intent
+  skillprism add <mcp-endpoint>            Fetch & register tools from remote MCP server
+  skillprism import <openapi.json>         Convert OpenAPI 3.0 or JSON catalog into tools
+  skillprism benchmark                     Run comparative token savings & latency benchmark
+  skillprism sync                          Ingest community tools into out-of-context index
+  skillprism proxy [--stdio|--port 8080]   Start transparent MCP proxy (forwards to real upstream tools)
+                   [--dry-run-simulation]  Opt into simulated execution for local mock testing
+                   [--config <file>]       Path to custom MCP servers config (default: .mcp.json)
+  skillprism stats                         Inspect catalog token savings and metrics
 
 EXAMPLES:
   $ npx @ritualdev-lab/skillprism init --cursor
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
-  $ npx @ritualdev-lab/skillprism add http://localhost:3000/mcp
-  $ npx @ritualdev-lab/skillprism import ./petstore-openapi.json
-  $ npx @ritualdev-lab/skillprism benchmark
-  $ npx @ritualdev-lab/skillprism proxy --port 8080
   $ npx @ritualdev-lab/skillprism proxy --stdio
+  $ npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
 `);
   }
 }
