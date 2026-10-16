@@ -8,7 +8,7 @@
   "bin": {
     "skillprism": "dist/cli.js"
   },
-  "files": ["dist", "README.md", "LICENSE", "SKILL.md"],
+  "files": ["dist", "README.md", "LICENSE", "SKILL.md", "action.yml"],
   "engines": {
     "node": ">=20.0.0"
   },
@@ -48,7 +48,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "tsx --test \"tests/**/*.test.ts\"",
-    "prepublishOnly": "pnpm run build && pnpm test",
+    "benchmark": "tsx src/cli.ts benchmark",
+    "prepublishOnly": "pnpm run build && pnpm test && npm pack --dry-run",
     "lint": "biome lint .",
     "format": "biome format --write ."
   },
