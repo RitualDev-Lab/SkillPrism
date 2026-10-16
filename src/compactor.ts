@@ -113,7 +113,20 @@ export class ContextCompactor {
     // Evict oldest entry if vault capacity reached
     if (this.vault.size >= this.maxVaultEntries) {
       const oldestKey = this.vault.keys().next().value;
-      if (oldestKey) this.vault.delete(oldestKey);
+      if (oldestKey) {
+        this.vault.delete(oldestKey);
+        if (this.storageDir) {
+          try {
+            const safeFilename = `${oldestKey.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+            const filePath = path.join(this.storageDir, safeFilename);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          } catch {
+            // Best effort disk cleanup
+          }
+        }
+      }
     }
 
     // Generate cryptographic hash reference
@@ -276,6 +289,17 @@ export class ContextCompactor {
     // Check expiry
     if (Date.now() > entry.expiresAt) {
       this.vault.delete(ref);
+      if (this.storageDir) {
+        try {
+          const safeFilename = `${ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+          const filePath = path.join(this.storageDir, safeFilename);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        } catch {
+          // Disk cleanup is best effort
+        }
+      }
       return {
         success: false,
         error: `Receipt '${ref}' has expired and was purged from out-of-context storage.`,
@@ -342,7 +366,7 @@ export class ContextCompactor {
   }
 
   /**
-   * Purge old or expired receipts from out-of-context memory (Garbage Collection)
+   * Purge old or expired receipts from out-of-context memory and disk storage (Garbage Collection)
    */
   public gc(olderThanMs?: number): number {
     const now = Date.now();
@@ -351,7 +375,52 @@ export class ContextCompactor {
     for (const [ref, entry] of this.vault.entries()) {
       if (now > entry.expiresAt || (olderThanMs && now - entry.createdAt > olderThanMs)) {
         this.vault.delete(ref);
+        if (this.storageDir) {
+          try {
+            const safeFilename = `${ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+            const filePath = path.join(this.storageDir, safeFilename);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+            }
+          } catch {
+            // Disk cleanup is best effort
+          }
+        }
         purged++;
+      }
+    }
+
+    // Clean up expired or aged-out files from disk storage if configured
+    if (this.storageDir && fs.existsSync(this.storageDir)) {
+      try {
+        const files = fs.readdirSync(this.storageDir);
+        for (const file of files) {
+          if (!file.endsWith(".json")) continue;
+          const filePath = path.join(this.storageDir, file);
+          try {
+            const stat = fs.statSync(filePath);
+            if (olderThanMs && now - stat.mtimeMs > olderThanMs) {
+              fs.unlinkSync(filePath);
+              purged++;
+              continue;
+            }
+            const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
+            if (raw.expiresAt && now > raw.expiresAt) {
+              fs.unlinkSync(filePath);
+              purged++;
+            }
+          } catch {
+            // Corrupt or unreadable disk file, prune it
+            try {
+              fs.unlinkSync(filePath);
+              purged++;
+            } catch {
+              // Ignore
+            }
+          }
+        }
+      } catch {
+        // Disk cleanup is best effort
       }
     }
 

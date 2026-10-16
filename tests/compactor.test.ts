@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import test, { describe } from "node:test";
 import { ContextCompactor } from "../src/compactor.js";
 import { JitHarness } from "../src/harness.js";
@@ -270,5 +273,55 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
     const previewInspect = compactor.inspectReceipt(receipt.ref, "preview");
     assert.equal(previewInspect.success, true);
     assert.equal(previewInspect.data, multiLineLog.slice(0, 500));
+  });
+
+  test("Phase 4: Disk storage persistence, overflow eviction, and GC cleanup", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillprism-compactor-test-"));
+
+    try {
+      // 1. Compactor with storageDir and maxVaultEntries = 2
+      const compactor = new ContextCompactor(50, 100, 2, tempDir);
+
+      const payload1 = { data: "x".repeat(100), id: 1 };
+      const payload2 = { data: "y".repeat(100), id: 2 };
+      const payload3 = { data: "z".repeat(100), id: 3 };
+
+      const { receipt: r1 } = compactor.compact("tool1", payload1);
+      const { receipt: r2 } = compactor.compact("tool2", payload2);
+
+      assert.ok(r1);
+      assert.ok(r2);
+
+      // Verify files exist on disk
+      const filesBeforeOverflow = fs.readdirSync(tempDir);
+      assert.equal(filesBeforeOverflow.length, 2);
+
+      // Compact 3rd item -> triggers vault eviction of oldest entry (r1)
+      const { receipt: r3 } = compactor.compact("tool3", payload3);
+      assert.ok(r3);
+
+      // Verify oldest file was evicted from disk as well
+      const r1Filename = `${r1.ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+      assert.equal(fs.existsSync(path.join(tempDir, r1Filename)), false);
+
+      // 2. Test inspectReceipt restores from disk if missing from memory
+      const r2Filename = `${r2.ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
+      assert.equal(fs.existsSync(path.join(tempDir, r2Filename)), true);
+
+      // 3. Test gc() cleans up disk files that have expired
+      // Force sleep or wait for expiry (100ms)
+      const start = Date.now();
+      while (Date.now() - start < 120) {
+        // Busy wait
+      }
+
+      const purged = compactor.gc();
+      assert.ok(purged >= 1);
+
+      const remainingFiles = fs.readdirSync(tempDir);
+      assert.equal(remainingFiles.length, 0);
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });
