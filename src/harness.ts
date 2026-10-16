@@ -21,6 +21,8 @@ export interface ActivatedSkillTurn {
   toolSchema: MetaToolDefinition;
   activatedAtTurn: number;
   expiresAtTurn: number;
+  activatedAtMs: number;
+  expiresAtMs: number;
 }
 
 export interface MetaToolCallResult {
@@ -43,11 +45,25 @@ export class JitHarness {
   private currentTurn = 1;
   private activeSkills: Map<string, ActivatedSkillTurn> = new Map();
   private defaultTtlTurns: number;
+  private defaultIdleTtlMs: number;
   private onToolsChangedListeners: Array<() => void> = [];
 
-  constructor(index: SkillIndex, defaultTtlTurns = 3) {
+  constructor(
+    index: SkillIndex,
+    defaultTtlTurns = 3,
+    defaultIdleTtlMs = 1000 * 60 * 10,
+  ) {
     this.index = index;
     this.defaultTtlTurns = defaultTtlTurns;
+    this.defaultIdleTtlMs = defaultIdleTtlMs;
+  }
+
+  public getDefaultTtlTurns(): number {
+    return this.defaultTtlTurns;
+  }
+
+  public getDefaultIdleTtlMs(): number {
+    return this.defaultIdleTtlMs;
   }
 
   /**
@@ -214,11 +230,14 @@ export class JitHarness {
 
       const toolSchema = this.convertToToolDefinition(skill);
 
+      const now = Date.now();
       this.activeSkills.set(skillId, {
         skillId,
         toolSchema,
         activatedAtTurn: this.currentTurn,
         expiresAtTurn: this.currentTurn + this.defaultTtlTurns,
+        activatedAtMs: now,
+        expiresAtMs: now + this.defaultIdleTtlMs,
       });
 
       // Emit change notification to dynamic MCP clients
@@ -231,6 +250,7 @@ export class JitHarness {
           message: `Skill '${skill.name}' successfully activated for execution. Its schema is now available in your active toolset.`,
           skillId: skill.id,
           expiresInTurns: this.defaultTtlTurns,
+          expiresInMs: this.defaultIdleTtlMs,
         },
         injectedToolSchema: toolSchema,
       };
@@ -285,6 +305,16 @@ export class JitHarness {
   }
 
   /**
+   * Refreshes the sliding inactivity window of an active skill upon execution
+   */
+  public touchSkill(skillId: string): void {
+    const active = this.activeSkills.get(skillId);
+    if (active) {
+      active.expiresAtMs = Date.now() + this.defaultIdleTtlMs;
+    }
+  }
+
+  /**
    * Unload a specific skill manually and notify listeners
    */
   public unloadSkill(skillId: string): boolean {
@@ -323,10 +353,16 @@ export class JitHarness {
     return this.activeSkills.size;
   }
 
-  private pruneExpiredSkills(): number {
+  /**
+   * Prunes skills that have exceeded either their turn TTL or idle wall-clock TTL.
+   */
+  public pruneExpiredSkills(): number {
+    const now = Date.now();
     let pruned = 0;
     for (const [id, active] of this.activeSkills.entries()) {
-      if (this.currentTurn >= active.expiresAtTurn) {
+      const turnExpired = this.currentTurn >= active.expiresAtTurn;
+      const timeExpired = active.expiresAtMs !== undefined && now >= active.expiresAtMs;
+      if (turnExpired || timeExpired) {
         this.activeSkills.delete(id);
         pruned++;
       }

@@ -222,10 +222,37 @@ export class SkillPrismProxyServer {
     return this.sseClients.size;
   }
 
+  private sweepTimer?: NodeJS.Timeout;
+
+  /**
+   * Start periodic idle sweep to prune wall-clock expired tools and notify clients
+   */
+  public startIdleSweep(intervalMs = 1000): void {
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+    }
+    this.sweepTimer = setInterval(() => {
+      this.interceptor.getHarness().pruneExpiredSkills();
+    }, intervalMs);
+    this.sweepTimer.unref?.();
+  }
+
+  /**
+   * Stop the periodic idle sweep
+   */
+  public stopIdleSweep(): void {
+    if (this.sweepTimer) {
+      clearInterval(this.sweepTimer);
+      this.sweepTimer = undefined;
+    }
+  }
+
   /**
    * Gracefully close active server transports
    */
   public async close(): Promise<void> {
+    this.stopIdleSweep();
+
     if (this.activeRl) {
       this.activeRl.close();
       this.activeRl = undefined;

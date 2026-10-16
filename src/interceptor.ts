@@ -107,6 +107,7 @@ export class McpProtocolInterceptor {
   private clientPermissions: Set<string> = new Set(["*"]);
   private notificationListeners: NotificationListener[] = [];
   private unsubscribeHarness?: () => void;
+  private autoStepTurns = true;
 
   constructor(
     harness: JitHarness,
@@ -170,6 +171,18 @@ export class McpProtocolInterceptor {
 
   public getCompactor(): ContextCompactor {
     return this.compactor;
+  }
+
+  public getHarness(): JitHarness {
+    return this.harness;
+  }
+
+  public setAutoStepTurns(enabled: boolean): void {
+    this.autoStepTurns = enabled;
+  }
+
+  public isAutoStepTurns(): boolean {
+    return this.autoStepTurns;
   }
 
   /**
@@ -422,12 +435,18 @@ export class McpProtocolInterceptor {
           }
         }
 
+        // Touch active skill sliding window if calling an active tool
+        this.harness.touchSkill(toolName);
+
         // 1. Direct Upstream Executor
         if (this.upstreamExecutor) {
           try {
             const rawOutput = await this.upstreamExecutor(toolName, toolArgs);
-            return this.formatToolResult(id, toolName, rawOutput);
+            const response = this.formatToolResult(id, toolName, rawOutput);
+            if (this.autoStepTurns) this.harness.stepTurn();
+            return response;
           } catch (execErr: any) {
+            if (this.autoStepTurns) this.harness.stepTurn();
             return {
               jsonrpc: "2.0",
               id,
@@ -452,8 +471,11 @@ export class McpProtocolInterceptor {
               toolArgs,
               skill.sourceServer,
             );
-            return this.formatToolResult(id, toolName, upstreamResult);
+            const response = this.formatToolResult(id, toolName, upstreamResult);
+            if (this.autoStepTurns) this.harness.stepTurn();
+            return response;
           } catch (upstreamErr: any) {
+            if (this.autoStepTurns) this.harness.stepTurn();
             return {
               jsonrpc: "2.0",
               id,
@@ -472,6 +494,7 @@ export class McpProtocolInterceptor {
 
         // 3. Fallback: Simulation mode explicitly opted in via --dry-run-simulation
         if (this.simulationMode) {
+          if (this.autoStepTurns) this.harness.stepTurn();
           return {
             jsonrpc: "2.0",
             id,

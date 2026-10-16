@@ -264,10 +264,27 @@ async function main() {
   } else if (command === "proxy") {
     const isStdio = args.includes("--stdio");
     const isSimulate = args.includes("--dry-run-simulation") || args.includes("--simulate");
+    const noTurnAdvance = args.includes("--no-turn-advance");
 
-    const harness = new JitHarness(index);
+    let turnTtl = 3;
+    const turnTtlIdx = args.indexOf("--turn-ttl");
+    if (turnTtlIdx !== -1 && args[turnTtlIdx + 1]) {
+      turnTtl = Number.parseInt(args[turnTtlIdx + 1], 10) || 3;
+    }
+
+    let idleTtlMs = 1000 * 60 * 10; // 10 minutes default
+    const idleTtlIdx = args.indexOf("--idle-ttl");
+    if (idleTtlIdx !== -1 && args[idleTtlIdx + 1]) {
+      const seconds = Number.parseInt(args[idleTtlIdx + 1], 10) || 600;
+      idleTtlMs = seconds * 1000;
+    }
+
+    const harness = new JitHarness(index, turnTtl, idleTtlMs);
     const interceptor = new McpProtocolInterceptor(harness, index);
     interceptor.setSimulationMode(isSimulate);
+    if (noTurnAdvance) {
+      interceptor.setAutoStepTurns(false);
+    }
 
     // Initialize Upstream MCP Manager
     const { UpstreamManager } = await import("./upstream.js");
@@ -330,6 +347,9 @@ USAGE:
   skillprism benchmark                     Run comparative token savings & latency benchmark
   skillprism sync                          Ingest community tools into out-of-context index
   skillprism proxy [--stdio|--port 8080]   Start transparent MCP proxy (forwards to real upstream tools)
+                   [--turn-ttl <N>]        Turns before inactive tools expire (default: 3)
+                   [--idle-ttl <seconds>]  Seconds before inactive tools expire (default: 600)
+                   [--no-turn-advance]     Disable automatic turn advancement on tool execution
                    [--dry-run-simulation]  Opt into simulated execution for local mock testing
                    [--config <file>]       Path to custom MCP servers config (default: .mcp.json)
   skillprism stats                         Inspect catalog token savings and metrics
@@ -337,7 +357,7 @@ USAGE:
 EXAMPLES:
   $ npx @ritualdev-lab/skillprism init --cursor
   $ npx @ritualdev-lab/skillprism search "upload file to s3"
-  $ npx @ritualdev-lab/skillprism proxy --stdio
+  $ npx @ritualdev-lab/skillprism proxy --stdio --turn-ttl 5
   $ npx @ritualdev-lab/skillprism proxy --port 8080 --dry-run-simulation
 `);
   }
