@@ -288,4 +288,155 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
     assert.equal(callRes.result?.isError, true);
     assert.match(callRes.result?.content[0]?.text, /S3 AccessDenied/);
   });
+
+  test("Phase 1 (S1) Regression: standard MCP tool result with large content array is compacted and inspectable", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+
+    // Large standard MCP result with content array
+    const largeRows = Array.from({ length: 60 }, (_, i) => ({
+      id: `record_${i}`,
+      description: `Payload item ${i} for enterprise auditing`,
+      tags: ["audit", "compliance", "soc2"],
+    }));
+
+    interceptor.setUpstreamExecutor(async () => {
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(largeRows),
+          },
+        ],
+      };
+    });
+
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 201,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "audit-bucket", key: "report.json" },
+      },
+    });
+
+    assert.equal(callRes.id, 201);
+    assert.ok(callRes.result);
+    assert.ok(Array.isArray(callRes.result.content));
+    assert.equal(callRes.result.content.length, 1);
+    assert.equal(callRes.result.content[0].type, "text");
+
+    const receipt = JSON.parse(callRes.result.content[0].text);
+    assert.ok(receipt.ref);
+    assert.ok(receipt.ref.startsWith("receipt:aws_s3_upload:"));
+    assert.equal(receipt.keyFields.count, 60);
+    assert.equal(receipt.status, "success");
+
+    // Drill down into compacted receipt via inspect_receipt meta-tool
+    const inspectRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 202,
+      method: "tools/call",
+      params: {
+        name: "inspect_receipt",
+        arguments: {
+          ref: receipt.ref,
+          path: "0.id",
+        },
+      },
+    });
+
+    assert.equal(inspectRes.id, 202);
+    const inspectData = JSON.parse(inspectRes.result.content[0].text);
+    assert.equal(inspectData.success, true);
+    assert.equal(inspectData.data, "record_0");
+  });
+
+  test("Phase 1 (S1) Regression: multimodal standard MCP response preserves image blocks while compacting text blocks", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+    const rawImageBytes = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+".repeat(500);
+
+    interceptor.setUpstreamExecutor(async () => {
+      return {
+        content: [
+          {
+            type: "image",
+            data: rawImageBytes,
+            mimeType: "image/png",
+          },
+          {
+            type: "text",
+            text: "Detailed image analysis report: ".repeat(100),
+          },
+        ],
+      };
+    });
+
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 203,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "screenshots", key: "app.png" },
+      },
+    });
+
+    assert.equal(callRes.id, 203);
+    assert.equal(callRes.result.content.length, 2);
+
+    // Image block preserved completely intact
+    const imageBlock = callRes.result.content[0];
+    assert.equal(imageBlock.type, "image");
+    assert.equal(imageBlock.data, rawImageBytes);
+    assert.equal(imageBlock.mimeType, "image/png");
+
+    // Text block compacted to semantic receipt
+    const textBlock = callRes.result.content[1];
+    assert.equal(textBlock.type, "text");
+    const receipt = JSON.parse(textBlock.text);
+    assert.ok(receipt.ref);
+    assert.ok(receipt.ref.startsWith("receipt:aws_s3_upload:"));
+  });
+
+  test("Phase 1 (S1) Regression: standard MCP error response preserves isError flag while compacting massive text", async () => {
+    const { interceptor, harness } = setupTestEnvironment();
+
+    interceptor.setUpstreamExecutor(async () => {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: "FATAL ERROR: Memory allocation failed in worker thread. Stack: ".repeat(50),
+          },
+        ],
+      };
+    });
+
+    await harness.handleMetaToolCall("load_skill", { skill_id: "aws_s3_upload" });
+
+    const callRes = await interceptor.handleMessage({
+      jsonrpc: "2.0",
+      id: 204,
+      method: "tools/call",
+      params: {
+        name: "aws_s3_upload",
+        arguments: { bucket: "crash-dumps", key: "core.dump" },
+      },
+    });
+
+    assert.equal(callRes.id, 204);
+    assert.equal(callRes.result.isError, true);
+    assert.equal(callRes.result.content.length, 1);
+
+    const receipt = JSON.parse(callRes.result.content[0].text);
+    assert.ok(receipt.ref);
+    assert.equal(receipt.status, "error");
+    assert.match(receipt.summary, /Large text output/);
+  });
 });

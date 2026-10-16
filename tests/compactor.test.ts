@@ -125,4 +125,150 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
     assert.ok(parsedText.ref.startsWith("receipt:fetch_audit_logs:"));
     assert.equal(parsedText.keyFields.count, 30);
   });
+
+  test("Phase 1 (S1): compactMcpResult compacts large text blocks inside standard MCP response", () => {
+    const compactor = new ContextCompactor(256);
+    const largeRows = Array.from({ length: 40 }, (_, i) => ({
+      id: `txn_${i}`,
+      amount: 1000 + i,
+      vendor: "Cloud Infrastructure Inc.",
+    }));
+    const rawMcpResult = {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(largeRows),
+        },
+      ],
+    };
+
+    const { isCompacted, result, receipts } = compactor.compactMcpResult("query_txns", rawMcpResult);
+
+    assert.equal(isCompacted, true);
+    assert.equal(receipts.length, 1);
+    assert.equal(result.content.length, 1);
+    assert.equal(result.content[0].type, "text");
+
+    const receipt = JSON.parse(result.content[0].text);
+    assert.ok(receipt.ref.startsWith("receipt:query_txns:"));
+    assert.equal(receipt.keyFields.count, 40);
+    assert.equal(receipt.status, "success");
+
+    // Drill-down inspection works via inspectReceipt
+    const inspectRes = compactor.inspectReceipt(receipt.ref, "0.vendor");
+    assert.equal(inspectRes.success, true);
+    assert.equal(inspectRes.data, "Cloud Infrastructure Inc.");
+  });
+
+  test("Phase 1 (S1): compactMcpResult leaves small text blocks untouched", () => {
+    const compactor = new ContextCompactor(512);
+    const rawMcpResult = {
+      content: [
+        {
+          type: "text",
+          text: "Small scalar text output under limit",
+        },
+      ],
+    };
+
+    const { isCompacted, result, receipts } = compactor.compactMcpResult("ping", rawMcpResult);
+
+    assert.equal(isCompacted, false);
+    assert.equal(receipts.length, 0);
+    assert.equal(result.content[0].text, "Small scalar text output under limit");
+  });
+
+  test("Phase 1 (S1): compactMcpResult preserves image content blocks untouched regardless of size", () => {
+    const compactor = new ContextCompactor(128);
+    const massiveBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+".repeat(500);
+    const rawMcpResult = {
+      content: [
+        {
+          type: "image",
+          data: massiveBase64,
+          mimeType: "image/png",
+        },
+      ],
+    };
+
+    const { isCompacted, result } = compactor.compactMcpResult("generate_diagram", rawMcpResult);
+
+    assert.equal(isCompacted, false);
+    assert.equal(result.content[0].type, "image");
+    assert.equal(result.content[0].data, massiveBase64);
+    assert.equal(result.content[0].mimeType, "image/png");
+  });
+
+  test("Phase 1 (S1): compactMcpResult preserves embedded resource blocks untouched", () => {
+    const compactor = new ContextCompactor(128);
+    const rawMcpResult = {
+      content: [
+        {
+          type: "resource",
+          resource: {
+            uri: "memo://developer-guidelines",
+            mimeType: "text/markdown",
+            text: "# Guidelines\n".repeat(50),
+          },
+        },
+      ],
+    };
+
+    const { isCompacted, result } = compactor.compactMcpResult("fetch_resource", rawMcpResult);
+
+    assert.equal(isCompacted, false);
+    assert.equal(result.content[0].type, "resource");
+    assert.equal(result.content[0].resource.uri, "memo://developer-guidelines");
+  });
+
+  test("Phase 1 (S1): compactMcpResult preserves isError status flag on standard error responses", () => {
+    const compactor = new ContextCompactor(128);
+    const rawMcpResult = {
+      isError: true,
+      content: [
+        {
+          type: "text",
+          text: "Error: Connection to database failed. Stack trace: ".repeat(20),
+        },
+      ],
+    };
+
+    const { isCompacted, result, receipts } = compactor.compactMcpResult("db_connect", rawMcpResult);
+
+    assert.equal(isCompacted, true);
+    assert.equal(result.isError, true);
+    assert.equal(receipts[0].status, "error");
+  });
+
+  test("Phase 1 (S1): inspectReceipt supports line and slice queries on raw text string receipts", () => {
+    const compactor = new ContextCompactor(128);
+    const multiLineLog = [
+      "2026-10-16 10:00:00 [INFO] System boot initialized",
+      "2026-10-16 10:00:01 [DEBUG] Loading drivers: network, disk, gpu",
+      "2026-10-16 10:00:02 [WARN] High memory pressure detected in pod-0",
+      "2026-10-16 10:00:03 [ERROR] Fatal exception caught: Connection reset by peer",
+      "2026-10-16 10:00:04 [INFO] Recovery initiated",
+    ].join("\n");
+
+    const { receipt } = compactor.compact("get_system_logs", multiLineLog);
+    assert.ok(receipt);
+    assert.equal(receipt.keyFields.lines, 5);
+
+    // 1. Line range query lines:3-4
+    const linesInspect = compactor.inspectReceipt(receipt.ref, "lines:3-4");
+    assert.equal(linesInspect.success, true);
+    assert.match(linesInspect.data, /High memory pressure/);
+    assert.match(linesInspect.data, /Fatal exception caught/);
+    assert.ok(!linesInspect.data.includes("System boot initialized"));
+
+    // 2. Character slice query slice:0:30
+    const sliceInspect = compactor.inspectReceipt(receipt.ref, "slice:0:30");
+    assert.equal(sliceInspect.success, true);
+    assert.equal(sliceInspect.data, multiLineLog.slice(0, 30));
+
+    // 3. Preview query
+    const previewInspect = compactor.inspectReceipt(receipt.ref, "preview");
+    assert.equal(previewInspect.success, true);
+    assert.equal(previewInspect.data, multiLineLog.slice(0, 500));
+  });
 });

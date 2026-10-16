@@ -148,25 +148,28 @@ export class McpProtocolInterceptor {
   }
 
   private formatToolResult(id: string | number, toolName: string, rawOutput: any): JsonRpcResponse {
-    // If output is already in MCP result format
-    if (rawOutput && typeof rawOutput === "object" && (rawOutput.content || rawOutput.isError !== undefined)) {
-      if (rawOutput.isError) {
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: {
-            isError: true,
-            content: rawOutput.content || [{ type: "text", text: "Upstream tool reported an error" }],
-          },
-        };
-      }
-      if (Array.isArray(rawOutput.content)) {
-        return {
-          jsonrpc: "2.0",
-          id,
-          result: rawOutput,
-        };
-      }
+    // If output is already in standard MCP result format ({ content: [...], isError?: boolean })
+    if (
+      rawOutput &&
+      typeof rawOutput === "object" &&
+      (Array.isArray(rawOutput.content) || rawOutput.isError !== undefined)
+    ) {
+      const content = Array.isArray(rawOutput.content)
+        ? rawOutput.content
+        : rawOutput.isError
+          ? [{ type: "text", text: "Upstream tool reported an error" }]
+          : [];
+
+      const { result } = this.compactor.compactMcpResult(toolName, {
+        ...rawOutput,
+        content,
+      });
+
+      return {
+        jsonrpc: "2.0",
+        id,
+        result,
+      };
     }
 
     const { output } = this.compactor.compact(toolName, rawOutput);

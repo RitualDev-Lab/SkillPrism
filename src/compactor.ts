@@ -82,6 +82,14 @@ export class ContextCompactor {
     }
   }
 
+  public getMaxByteThreshold(): number {
+    return this.maxByteThreshold;
+  }
+
+  public setMaxByteThreshold(threshold: number): void {
+    this.maxByteThreshold = threshold;
+  }
+
   /**
    * Compacts raw execution output if it exceeds maxByteThreshold
    */
@@ -89,6 +97,7 @@ export class ContextCompactor {
     toolName: string,
     rawData: any,
     ttlMs?: number,
+    status: "success" | "error" = "success",
   ): { isCompacted: boolean; output: any; receipt?: SemanticReceipt } {
     // Opportunistic automatic GC to keep memory bounded
     this.gc();
@@ -148,7 +157,7 @@ export class ContextCompactor {
       tool: toolName,
       summary,
       keyFields,
-      status: "success",
+      status,
       rawBytes: byteSize,
       tokensSaved,
       timestamp: new Date().toISOString(),
@@ -158,6 +167,78 @@ export class ContextCompactor {
       isCompacted: true,
       output: receipt,
       receipt,
+    };
+  }
+
+  /**
+   * Compacts an MCP CallToolResult or array of content blocks, preserving
+   * multimodal elements (images, resources) and error flags while compacting
+   * oversized text blocks into semantic receipts.
+   */
+  public compactMcpResult(
+    toolName: string,
+    rawResult: { content?: any[]; isError?: boolean; [key: string]: any },
+    ttlMs?: number,
+  ): {
+    isCompacted: boolean;
+    result: { content: any[]; isError?: boolean; [key: string]: any };
+    receipts: SemanticReceipt[];
+  } {
+    if (!rawResult || typeof rawResult !== "object" || !Array.isArray(rawResult.content)) {
+      return {
+        isCompacted: false,
+        result: { content: rawResult?.content || [], isError: rawResult?.isError },
+        receipts: [],
+      };
+    }
+
+    const receipts: SemanticReceipt[] = [];
+    let isCompacted = false;
+    const status: "success" | "error" = rawResult.isError ? "error" : "success";
+
+    const compactedContent = rawResult.content.map((block) => {
+      // Preserve non-text blocks (image, resource, etc.) without modification
+      if (!block || typeof block !== "object" || block.type !== "text" || typeof block.text !== "string") {
+        return block;
+      }
+
+      const byteSize = Buffer.byteLength(block.text, "utf8");
+      if (byteSize <= this.maxByteThreshold) {
+        return block;
+      }
+
+      // Payload exceeds threshold: determine if it's JSON structured or plain text
+      let payloadToCompact: any = block.text;
+      try {
+        const parsed = JSON.parse(block.text);
+        if (parsed !== null && typeof parsed === "object") {
+          payloadToCompact = parsed;
+        }
+      } catch {
+        // Keep as string
+      }
+
+      const compacted = this.compact(toolName, payloadToCompact, ttlMs, status);
+      if (compacted.isCompacted && compacted.receipt) {
+        isCompacted = true;
+        receipts.push(compacted.receipt);
+        return {
+          type: "text",
+          text: JSON.stringify(compacted.receipt, null, 2),
+        };
+      }
+
+      return block;
+    });
+
+    return {
+      isCompacted,
+      result: {
+        ...rawResult,
+        content: compactedContent,
+        ...(rawResult.isError !== undefined ? { isError: rawResult.isError } : {}),
+      },
+      receipts,
     };
   }
 
@@ -207,13 +288,49 @@ export class ContextCompactor {
       return { success: true, data: fullData };
     }
 
-    // Simple dot/bracket path resolution: e.g. "users.0.email"
+    // If fullData is a string, support targeted line/slice or preview queries
+    if (typeof fullData === "string") {
+      if (queryPath === "preview") {
+        return { success: true, data: fullData.slice(0, 500) };
+      }
+      if (queryPath.startsWith("lines:")) {
+        const parts = queryPath.slice(6).split("-");
+        const start = Math.max(1, Number.parseInt(parts[0], 10) || 1);
+        const end = Math.max(start, Number.parseInt(parts[1], 10) || start);
+        const lines = fullData.split(/\r?\n/);
+        return { success: true, data: lines.slice(start - 1, end).join("\n") };
+      }
+      if (queryPath.startsWith("slice:")) {
+        const parts = queryPath.slice(6).split(":");
+        const start = Number.parseInt(parts[0], 10) || 0;
+        const end = Number.parseInt(parts[1], 10) || fullData.length;
+        return { success: true, data: fullData.slice(start, end) };
+      }
+      // If string happens to be serialized JSON, attempt object path extraction
+      try {
+        const parsed = JSON.parse(fullData);
+        if (parsed && typeof parsed === "object") {
+          return this.resolveObjectPath(parsed, queryPath);
+        }
+      } catch {
+        // Fall through
+      }
+      return { success: true, data: fullData };
+    }
+
+    return this.resolveObjectPath(fullData, queryPath);
+  }
+
+  private resolveObjectPath(
+    obj: any,
+    queryPath: string,
+  ): { success: boolean; data?: any; error?: string } {
     try {
       const keys = queryPath
         .replace(/\[(\d+)\]/g, ".$1")
         .split(".")
         .filter(Boolean);
-      let current = fullData;
+      let current = obj;
       for (const key of keys) {
         if (current === undefined || current === null) break;
         current = current[key];
@@ -290,6 +407,21 @@ export class ContextCompactor {
       return {
         summary: `Payload returned ${keys.length} top-level fields for ${toolName}`,
         keyFields,
+      };
+    }
+
+    if (typeof rawData === "string") {
+      const lines = rawData.split(/\r?\n/);
+      const lineCount = lines.length;
+      const charCount = rawData.length;
+      const preview = rawData.slice(0, 200).trim();
+      return {
+        summary: `Large text output (${lineCount} lines, ${charCount} chars) returned from ${toolName}`,
+        keyFields: {
+          lines: lineCount,
+          characters: charCount,
+          preview: preview.length > 0 ? preview : "[Empty text]",
+        },
       };
     }
 
