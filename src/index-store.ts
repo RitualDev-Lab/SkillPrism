@@ -1,7 +1,18 @@
 import { encode } from "gpt-tokenizer";
 import { BM25Engine } from "./bm25.js";
 import { FastTextEmbeddingEngine } from "./embeddings.js";
-import type { IndexStats, SkillDefinition, SkillSearchResult } from "./types.js";
+import type {
+  SkillPrismSqliteStore,
+  SqliteVecIndexAdapter,
+  VectorIndexAdapter,
+} from "./sqlite-store.js";
+import type {
+  IndexStats,
+  McpPromptDefinition,
+  McpResourceDefinition,
+  SkillDefinition,
+  SkillSearchResult,
+} from "./types.js";
 
 /**
  * SkillIndex
@@ -12,6 +23,110 @@ export class SkillIndex {
   private skills: Map<string, SkillDefinition> = new Map();
   private bm25: BM25Engine = new BM25Engine();
   private embeddings: Map<string, number[]> = new Map();
+  private prompts: Map<string, McpPromptDefinition> = new Map();
+  private resources: Map<string, McpResourceDefinition> = new Map();
+  private persistentStore?: SkillPrismSqliteStore | VectorIndexAdapter;
+
+  /**
+   * Attaches a persistent SQLite/vector store for automatic sync on register
+   */
+  public attachPersistentStore(store: SkillPrismSqliteStore | VectorIndexAdapter): void {
+    this.persistentStore = store;
+  }
+
+  public getPersistentStore(): SkillPrismSqliteStore | VectorIndexAdapter | undefined {
+    return this.persistentStore;
+  }
+
+  /**
+   * Syncs all current in-memory skills and precomputed vectors to persistent storage
+   */
+  public syncToPersistentStore(store?: SkillPrismSqliteStore | VectorIndexAdapter): number {
+    const targetStore = store || this.persistentStore;
+    if (!targetStore || !targetStore.isAvailable()) return 0;
+
+    let synced = 0;
+    // 1. Sync skills if store is SkillPrismSqliteStore or has getStore()
+    const sqliteStore: SkillPrismSqliteStore | undefined =
+      "saveSkill" in targetStore
+        ? (targetStore as SkillPrismSqliteStore)
+        : "getStore" in targetStore
+          ? (targetStore as any).getStore()
+          : undefined;
+
+    if (sqliteStore) {
+      sqliteStore.saveSkillsBatch(Array.from(this.skills.values()));
+    }
+
+    // 2. Sync vectors
+    const vectorEntries: Array<{ id: string; vector: number[] }> = [];
+    for (const [id, vec] of this.embeddings.entries()) {
+      vectorEntries.push({ id, vector: vec });
+    }
+
+    if (vectorEntries.length > 0) {
+      synced = targetStore.saveVectorsBatch(vectorEntries);
+    }
+
+    return synced;
+  }
+
+  /**
+   * Fast warm loading across agent restarts: loads skills and vectors directly from SQLite
+   * in milliseconds without having to re-fetch or re-embed thousands of tools.
+   */
+  public loadFromPersistentStore(store: SkillPrismSqliteStore | VectorIndexAdapter): number {
+    if (!store.isAvailable()) return 0;
+    this.persistentStore = store;
+
+    const sqliteStore: SkillPrismSqliteStore | undefined =
+      "loadSkills" in store
+        ? (store as SkillPrismSqliteStore)
+        : "getStore" in store
+          ? (store as any).getStore()
+          : undefined;
+
+    // 1. Load precomputed vectors
+    const storedVectors = "loadAllVectors" in store
+      ? (store as any).loadAllVectors()
+      : store.loadVectors();
+
+    const vectorMap = storedVectors instanceof Map ? storedVectors : new Map<string, number[]>();
+
+    // 2. Load skills
+    let loadedCount = 0;
+    if (sqliteStore) {
+      const skills = sqliteStore.loadSkills();
+      for (const skill of skills) {
+        this.skills.set(skill.id, skill);
+
+        // Add to lexical BM25
+        const searchableContent = [
+          skill.name,
+          skill.id,
+          skill.summary,
+          skill.description,
+          skill.category,
+          ...(skill.tags || []),
+          ...(skill.permissions || []),
+          ...(skill.parameters || []).map((p) => `${p.name} ${p.description} ${p.type}`),
+        ].join(" ");
+        this.bm25.addDocument(skill.id, searchableContent);
+
+        // Attach pre-computed vector if present, or compute
+        const existingVec = vectorMap.get(skill.id);
+        if (existingVec && existingVec.length > 0) {
+          this.embeddings.set(skill.id, existingVec);
+        } else {
+          const vector = FastTextEmbeddingEngine.embed(searchableContent);
+          this.embeddings.set(skill.id, vector);
+        }
+        loadedCount++;
+      }
+    }
+
+    return loadedCount;
+  }
 
   /**
    * Register a new skill into the out-of-context catalog
@@ -52,6 +167,21 @@ export class SkillIndex {
     // Compute and index continuous dense semantic embedding vector
     const vector = FastTextEmbeddingEngine.embed(searchableContent);
     this.embeddings.set(storedSkill.id, vector);
+
+    // If a persistent store is attached, auto-sync skill and vector
+    if (this.persistentStore?.isAvailable()) {
+      const sqliteStore: SkillPrismSqliteStore | undefined =
+        "saveSkill" in this.persistentStore
+          ? (this.persistentStore as SkillPrismSqliteStore)
+          : "getStore" in this.persistentStore
+            ? (this.persistentStore as any).getStore()
+            : undefined;
+
+      if (sqliteStore) {
+        sqliteStore.saveSkill(storedSkill);
+      }
+      this.persistentStore.saveVector(storedSkill.id, vector);
+    }
   }
 
   /**
@@ -94,6 +224,48 @@ export class SkillIndex {
    */
   public get(id: string): SkillDefinition | undefined {
     return this.skills.get(id);
+  }
+
+  /**
+   * Register an MCP Prompt into the out-of-context catalog
+   */
+  public registerPrompt(prompt: McpPromptDefinition): void {
+    this.prompts.set(prompt.name, prompt);
+  }
+
+  /**
+   * Retrieve an MCP Prompt by name
+   */
+  public getPrompt(name: string): McpPromptDefinition | undefined {
+    return this.prompts.get(name);
+  }
+
+  /**
+   * List all registered MCP Prompts
+   */
+  public listPrompts(): McpPromptDefinition[] {
+    return Array.from(this.prompts.values());
+  }
+
+  /**
+   * Register an MCP Resource into the out-of-context catalog
+   */
+  public registerResource(resource: McpResourceDefinition): void {
+    this.resources.set(resource.uri, resource);
+  }
+
+  /**
+   * Retrieve an MCP Resource by URI
+   */
+  public getResource(uri: string): McpResourceDefinition | undefined {
+    return this.resources.get(uri);
+  }
+
+  /**
+   * List all registered MCP Resources
+   */
+  public listResources(): McpResourceDefinition[] {
+    return Array.from(this.resources.values());
   }
 
   private static readonly SYNONYM_MAP: Record<string, string[]> = {

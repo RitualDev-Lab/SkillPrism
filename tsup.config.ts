@@ -12,4 +12,6 @@ export default defineConfig({
   target: "es2022",
   minify: false,
   splitting: true,
+  external: ["@xenova/transformers", "node:sqlite"],
 });
+

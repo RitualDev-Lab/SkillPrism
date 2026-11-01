@@ -81,6 +81,14 @@ export class SkillPrismSqliteStore {
 
       CREATE INDEX IF NOT EXISTS idx_skills_category ON skills(category);
       CREATE INDEX IF NOT EXISTS idx_receipts_expires ON receipts(expires_at);
+
+      CREATE TABLE IF NOT EXISTS vectors (
+        id TEXT PRIMARY KEY,
+        dimensions INTEGER NOT NULL,
+        vector_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_vectors_id ON vectors(id);
     `);
   }
 
@@ -247,6 +255,104 @@ export class SkillPrismSqliteStore {
   }
 
   /**
+   * Save a dense semantic vector for a skill into SQLite
+   */
+  public saveVector(id: string, vector: number[]): boolean {
+    if (!this.db) return false;
+    try {
+      const query = this.db.prepare(`
+        INSERT INTO vectors (id, dimensions, vector_json, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          dimensions = excluded.dimensions,
+          vector_json = excluded.vector_json,
+          updated_at = excluded.updated_at
+      `);
+      query.run(id, vector.length, JSON.stringify(vector), Date.now());
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Batch save vectors in transaction
+   */
+  public saveVectorsBatch(entries: Array<{ id: string; vector: number[] }>): number {
+    if (!this.db) return 0;
+    let saved = 0;
+    try {
+      this.db.exec("BEGIN TRANSACTION");
+      for (const entry of entries) {
+        if (this.saveVector(entry.id, entry.vector)) saved++;
+      }
+      this.db.exec("COMMIT");
+    } catch {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        // Ignore rollback failure
+      }
+    }
+    return saved;
+  }
+
+  /**
+   * Load a specific vector by skill ID
+   */
+  public loadVector(id: string): number[] | null {
+    if (!this.db) return null;
+    try {
+      const query = this.db.prepare("SELECT vector_json FROM vectors WHERE id = ? LIMIT 1");
+      const row = query.get(id);
+      return row ? JSON.parse(row.vector_json) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Load all persistent vectors into in-memory lookup map
+   */
+  public loadAllVectors(): Map<string, number[]> {
+    const map = new Map<string, number[]>();
+    if (!this.db) return map;
+    try {
+      const query = this.db.prepare("SELECT id, vector_json FROM vectors");
+      const rows = query.all();
+      for (const row of rows) {
+        map.set(row.id, JSON.parse(row.vector_json));
+      }
+    } catch {
+      // Ignore
+    }
+    return map;
+  }
+
+  /**
+   * Performs nearest-neighbor cosine similarity search over stored vectors
+   */
+  public searchNearestVectors(
+    queryVector: number[],
+    topK = 5,
+  ): Array<{ id: string; similarity: number }> {
+    const all = this.loadAllVectors();
+    const scored: Array<{ id: string; similarity: number }> = [];
+
+    for (const [id, vec] of all.entries()) {
+      if (vec.length === queryVector.length && vec.length > 0) {
+        let dot = 0;
+        for (let i = 0; i < vec.length; i++) {
+          dot += vec[i] * queryVector[i];
+        }
+        scored.push({ id, similarity: Math.max(0, Math.min(1.0, dot)) });
+      }
+    }
+
+    return scored.sort((a, b) => b.similarity - a.similarity).slice(0, topK);
+  }
+
+  /**
    * Close database handle
    */
   public close(): void {
@@ -258,5 +364,65 @@ export class SkillPrismSqliteStore {
       }
       this.db = null;
     }
+  }
+}
+
+/**
+ * Pluggable Vector Index Adapter Interface
+ */
+export interface VectorIndexAdapter {
+  readonly name: string;
+  isAvailable(): boolean;
+  saveVector(id: string, vector: number[]): boolean;
+  saveVectorsBatch(entries: Array<{ id: string; vector: number[] }>): number;
+  loadVectors(): Map<string, number[]>;
+  searchNearest(
+    queryVector: number[],
+    topK?: number,
+  ): Array<{ id: string; similarity: number }>;
+}
+
+/**
+ * SqliteVecIndexAdapter
+ * Lightweight, zero-dependency SQLite-backed persistent vector index adapter.
+ * Enables instant catalog & vector loading across agent restarts with thousands of enterprise tools.
+ */
+export class SqliteVecIndexAdapter implements VectorIndexAdapter {
+  public readonly name = "sqlite-vec";
+  private store: SkillPrismSqliteStore;
+
+  constructor(store?: SkillPrismSqliteStore | string) {
+    if (typeof store === "string") {
+      this.store = new SkillPrismSqliteStore(store);
+    } else {
+      this.store = store || new SkillPrismSqliteStore();
+    }
+  }
+
+  public isAvailable(): boolean {
+    return this.store.isAvailable();
+  }
+
+  public getStore(): SkillPrismSqliteStore {
+    return this.store;
+  }
+
+  public saveVector(id: string, vector: number[]): boolean {
+    return this.store.saveVector(id, vector);
+  }
+
+  public saveVectorsBatch(entries: Array<{ id: string; vector: number[] }>): number {
+    return this.store.saveVectorsBatch(entries);
+  }
+
+  public loadVectors(): Map<string, number[]> {
+    return this.store.loadAllVectors();
+  }
+
+  public searchNearest(
+    queryVector: number[],
+    topK = 5,
+  ): Array<{ id: string; similarity: number }> {
+    return this.store.searchNearestVectors(queryVector, topK);
   }
 }

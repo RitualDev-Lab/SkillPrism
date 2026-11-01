@@ -169,6 +169,20 @@ export class McpProtocolInterceptor {
     this.emitNotification("notifications/tools/list_changed", {});
   }
 
+  /**
+   * Dispatches notifications/prompts/list_changed according to Model Context Protocol specification
+   */
+  public notifyPromptsListChanged(): void {
+    this.emitNotification("notifications/prompts/list_changed", {});
+  }
+
+  /**
+   * Dispatches notifications/resources/list_changed according to Model Context Protocol specification
+   */
+  public notifyResourcesListChanged(): void {
+    this.emitNotification("notifications/resources/list_changed", {});
+  }
+
   public setGrantedPermissions(permissions: string[]): void {
     this.clientPermissions = new Set(permissions);
   }
@@ -301,6 +315,8 @@ export class McpProtocolInterceptor {
             protocolVersion: clientProto,
             capabilities: {
               tools: { listChanged: true },
+              prompts: { listChanged: true },
+              resources: { listChanged: true, subscribe: true },
             },
             serverInfo: {
               name: "SkillPrism Progressive JIT Gateway",
@@ -544,6 +560,141 @@ export class McpProtocolInterceptor {
           error: {
             code: -32603,
             message: `Tool execution failed: No upstream executor or MCP server connected for tool '${toolName}'. Pass --dry-run-simulation if you intend to mock tool execution.`,
+          },
+        };
+      }
+
+      // 4. Intercept prompts/list: Progressive disclosure of MCP Prompts
+      if (method === "prompts/list") {
+        const prompts = this.index.listPrompts().map((p) => ({
+          name: p.name,
+          description: p.description,
+          arguments: p.arguments,
+        }));
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            prompts,
+          },
+        };
+      }
+
+      // 5. Intercept prompts/get: Fetch and populate prompt template
+      if (method === "prompts/get") {
+        const promptName = params?.name;
+        const promptArgs = params?.arguments || {};
+        const prompt = this.index.getPrompt(promptName);
+        if (!prompt) {
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32602,
+              message: `Prompt '${promptName}' not found in registry`,
+            },
+          };
+        }
+
+        let messages: any[] = [];
+        if (prompt.handler) {
+          const handlerRes = await prompt.handler(promptArgs);
+          messages = Array.isArray(handlerRes?.messages)
+            ? handlerRes.messages
+            : [{ role: "user", content: { type: "text", text: String(handlerRes) } }];
+        } else {
+          messages = [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: prompt.description || `Prompt: ${promptName}`,
+              },
+            },
+          ];
+        }
+
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            description: prompt.description,
+            messages,
+          },
+        };
+      }
+
+      // 6. Intercept resources/list: Progressive disclosure of MCP Resources
+      if (method === "resources/list") {
+        const resources = this.index.listResources().map((r) => ({
+          uri: r.uri,
+          name: r.name,
+          description: r.description,
+          mimeType: r.mimeType,
+        }));
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            resources,
+          },
+        };
+      }
+
+      // 7. Intercept resources/read: Fetch raw resource payload
+      if (method === "resources/read") {
+        const uri = params?.uri;
+        const resource = this.index.getResource(uri);
+        if (!resource) {
+          return {
+            jsonrpc: "2.0",
+            id,
+            error: {
+              code: -32602,
+              message: `Resource '${uri}' not found in registry`,
+            },
+          };
+        }
+
+        let contents: any[] = [];
+        if (resource.handler) {
+          const resOutput = await resource.handler();
+          contents = Array.isArray(resOutput?.contents)
+            ? resOutput.contents
+            : [
+                {
+                  uri,
+                  mimeType: resource.mimeType || "text/plain",
+                  text: typeof resOutput === "string" ? resOutput : JSON.stringify(resOutput),
+                },
+              ];
+        } else {
+          contents = [
+            {
+              uri,
+              mimeType: resource.mimeType || "text/plain",
+              text: resource.text || "",
+              ...(resource.blob ? { blob: resource.blob } : {}),
+            },
+          ];
+        }
+
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            contents,
+          },
+        };
+      }
+
+      // 8. Intercept resources/templates/list
+      if (method === "resources/templates/list") {
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            resourceTemplates: [],
           },
         };
       }

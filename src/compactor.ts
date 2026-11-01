@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type { SkillPrismSqliteStore } from "./sqlite-store.js";
 
 export interface SemanticReceipt {
   /** Unique reference token: e.g. "receipt:4a7f9b8c" */
@@ -46,6 +47,7 @@ export class ContextCompactor {
   private defaultTtlMs: number;
   private maxVaultEntries: number;
   private storageDir?: string;
+  private sqliteStore?: SkillPrismSqliteStore;
   private totalRawBytesCompacted = 0;
   private totalTokensSaved = 0;
 
@@ -54,11 +56,21 @@ export class ContextCompactor {
     defaultTtlMs = 1000 * 60 * 30,
     maxVaultEntries = 500,
     storageDir?: string,
+    sqliteStore?: SkillPrismSqliteStore,
   ) {
     this.maxByteThreshold = maxByteThreshold;
     this.defaultTtlMs = defaultTtlMs;
     this.maxVaultEntries = maxVaultEntries;
     this.storageDir = storageDir;
+    this.sqliteStore = sqliteStore;
+  }
+
+  public setSqliteStore(store: SkillPrismSqliteStore): void {
+    this.sqliteStore = store;
+  }
+
+  public getSqliteStore(): SkillPrismSqliteStore | undefined {
+    return this.sqliteStore;
   }
 
   /**
@@ -176,6 +188,19 @@ export class ContextCompactor {
       timestamp: new Date().toISOString(),
     };
 
+    // Automated Return Payload Compaction: Store full artifact in SQLite LRU cache
+    if (this.sqliteStore?.isAvailable()) {
+      this.sqliteStore.saveReceipt(
+        ref,
+        toolName,
+        summary,
+        rawData,
+        byteSize,
+        tokensSaved,
+        expiry,
+      );
+    }
+
     return {
       isCompacted: true,
       output: receipt,
@@ -263,6 +288,13 @@ export class ContextCompactor {
     queryPath?: string,
   ): { success: boolean; data?: any; error?: string } {
     let entry = this.vault.get(ref);
+    if (!entry && this.sqliteStore?.isAvailable()) {
+      const sqliteData = this.sqliteStore.loadReceiptData(ref);
+      if (sqliteData !== null) {
+        entry = { data: sqliteData, createdAt: Date.now(), expiresAt: Date.now() + this.defaultTtlMs };
+        this.vault.set(ref, entry);
+      }
+    }
     if (!entry && this.storageDir) {
       try {
         const safeFilename = `${ref.replace(/[^a-zA-Z0-9_\-]/g, "_")}.json`;
@@ -357,7 +389,11 @@ export class ContextCompactor {
       let current = obj;
       for (const key of keys) {
         if (current === undefined || current === null) break;
-        current = current[key];
+        if (Array.isArray(current) && (key === "count" || key === "total")) {
+          current = current.length;
+        } else {
+          current = current[key];
+        }
       }
       return { success: true, data: current };
     } catch (err: any) {
@@ -388,6 +424,11 @@ export class ContextCompactor {
         }
         purged++;
       }
+    }
+
+    // Clean up expired receipts from SQLite store if configured
+    if (this.sqliteStore?.isAvailable()) {
+      purged += this.sqliteStore.pruneExpiredReceipts();
     }
 
     // Clean up expired or aged-out files from disk storage if configured

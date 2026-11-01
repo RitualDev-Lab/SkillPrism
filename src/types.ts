@@ -90,3 +90,27 @@ export interface TaskTrajectoryMetrics {
   tokenEfficiencyMultiplier: number;
 }
 
+export interface McpPromptArgument {
+  name: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface McpPromptDefinition {
+  name: string;
+  description?: string;
+  arguments?: McpPromptArgument[];
+  handler?: (args: Record<string, string>) => Promise<any> | any;
+}
+
+export interface McpResourceDefinition {
+  uri: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+  text?: string;
+  blob?: string;
+  handler?: () => Promise<any> | any;
+}
+
+

@@ -3,6 +3,141 @@ export interface SemanticEmbeddingVector {
   vector: number[];
 }
 
+export type EmbeddingBackend = "fasttext" | "transformers" | "onnx";
+
+export interface TransformerEmbeddingOptions {
+  model?: string;
+  quantized?: boolean;
+}
+
+/**
+ * TransformerEmbeddingEngine
+ * Optional zero-network, local neural embedding engine using @xenova/transformers (ONNX runtime).
+ * Defaults to Xenova/all-MiniLM-L6-v2 (384 dimensions) for deep semantic understanding.
+ * Degrades gracefully to FastTextEmbeddingEngine if @xenova/transformers is not installed.
+ */
+export class TransformerEmbeddingEngine {
+  private static extractorPromise: Promise<any> | null = null;
+  private static loadedModelName = "Xenova/all-MiniLM-L6-v2";
+  private static isSupported: boolean | null = null;
+
+  /**
+   * Checks whether @xenova/transformers is available in the current environment
+   */
+  public static async isAvailable(): Promise<boolean> {
+    if (TransformerEmbeddingEngine.isSupported !== null) {
+      return TransformerEmbeddingEngine.isSupported;
+    }
+    try {
+      // Dynamic import to keep @xenova/transformers optional and zero-network by default
+      const mod = await import("@xenova/transformers" as any);
+      TransformerEmbeddingEngine.isSupported = Boolean(mod && (mod.pipeline || mod.default?.pipeline));
+      return TransformerEmbeddingEngine.isSupported;
+    } catch {
+      TransformerEmbeddingEngine.isSupported = false;
+      return false;
+    }
+  }
+
+  /**
+   * Initializes or reuses the local transformer feature-extraction pipeline
+   */
+  private static async getExtractor(options: TransformerEmbeddingOptions = {}): Promise<any> {
+    const modelName = options.model || TransformerEmbeddingEngine.loadedModelName;
+    if (!TransformerEmbeddingEngine.extractorPromise || modelName !== TransformerEmbeddingEngine.loadedModelName) {
+      TransformerEmbeddingEngine.loadedModelName = modelName;
+      TransformerEmbeddingEngine.extractorPromise = (async () => {
+        const { pipeline, env } = await import("@xenova/transformers" as any);
+        if (env) {
+          // Force local/zero-network execution if models are cached locally
+          env.allowRemoteModels = false;
+        }
+        return pipeline("feature-extraction", modelName, {
+          quantized: options.quantized !== false,
+        });
+      })();
+    }
+    return TransformerEmbeddingEngine.extractorPromise;
+  }
+
+  /**
+   * Generates dense neural semantic embedding vector using local ONNX transformer
+   */
+  public static async embed(text: string, options: TransformerEmbeddingOptions = {}): Promise<number[]> {
+    const available = await TransformerEmbeddingEngine.isAvailable();
+    if (!available) {
+      // Graceful fallback to 64-dim n-gram hashing
+      return FastTextEmbeddingEngine.embed(text);
+    }
+
+    try {
+      const extractor = await TransformerEmbeddingEngine.getExtractor(options);
+      const output = await extractor(text, { pooling: "mean", normalize: true });
+      const vector: number[] = Array.from(output.data);
+      return vector;
+    } catch {
+      // Fallback on inference error
+      return FastTextEmbeddingEngine.embed(text);
+    }
+  }
+
+  /**
+   * Batch embedding generation
+   */
+  public static async embedBatch(texts: string[], options: TransformerEmbeddingOptions = {}): Promise<number[][]> {
+    const results: number[][] = [];
+    for (const text of texts) {
+      results.push(await TransformerEmbeddingEngine.embed(text, options));
+    }
+    return results;
+  }
+}
+
+/**
+ * PluggableEmbeddingEngine
+ * Unified gateway supporting both instant synchronous n-gram hashing and
+ * asynchronous local neural transformer embeddings.
+ */
+export class PluggableEmbeddingEngine {
+  private static activeBackend: EmbeddingBackend = "fasttext";
+
+  public static setBackend(backend: EmbeddingBackend): void {
+    PluggableEmbeddingEngine.activeBackend = backend;
+  }
+
+  public static getBackend(): EmbeddingBackend {
+    return PluggableEmbeddingEngine.activeBackend;
+  }
+
+  /**
+   * Generates embedding using active or requested backend
+   */
+  public static async embed(
+    text: string,
+    backend: EmbeddingBackend = PluggableEmbeddingEngine.activeBackend,
+    options?: TransformerEmbeddingOptions,
+  ): Promise<number[]> {
+    if (backend === "transformers" || backend === "onnx") {
+      return TransformerEmbeddingEngine.embed(text, options);
+    }
+    return FastTextEmbeddingEngine.embed(text);
+  }
+
+  /**
+   * Instant synchronous embedding (uses FastText)
+   */
+  public static embedSync(text: string): number[] {
+    return FastTextEmbeddingEngine.embed(text);
+  }
+
+  /**
+   * Computes cosine similarity between two vectors
+   */
+  public static cosineSimilarity(a: number[], b: number[]): number {
+    return FastTextEmbeddingEngine.cosineSimilarity(a, b);
+  }
+}
+
 /**
  * FastTextEmbeddingEngine
  *
