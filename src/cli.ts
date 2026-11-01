@@ -83,7 +83,9 @@ async function main() {
     if (sqliteSkills.length > 0) {
       index.registerBatch(sqliteSkills);
       if (command !== "proxy") {
-        console.log(`🗄️ Loaded ${sqliteSkills.length} tools from SQLite (${sqliteStore.getDbPath()})`);
+        console.log(
+          `🗄️ Loaded ${sqliteSkills.length} tools from SQLite (${sqliteStore.getDbPath()})`,
+        );
       }
     }
   }
@@ -100,7 +102,8 @@ async function main() {
   }
 
   if (command === "init") {
-    const isCursor = args.includes("--cursor") || (!args.includes("--claude") && !args.includes("--all"));
+    const isCursor =
+      args.includes("--cursor") || (!args.includes("--claude") && !args.includes("--all"));
     const isClaude = args.includes("--claude") || args.includes("--all");
     const isAll = args.includes("--all");
     const isForce = args.includes("--force") || args.includes("--overwrite");
@@ -134,7 +137,9 @@ async function main() {
       process.exit(1);
     }
 
-    console.log("\n🎉 SkillPrism integration complete! Start your agent to enjoy 97%+ context savings.\n");
+    console.log(
+      "\n🎉 SkillPrism integration complete! Start your agent to enjoy 97%+ context savings.\n",
+    );
   } else if (command === "search") {
     const query = args.slice(1).join(" ");
     if (!query) {
@@ -171,7 +176,9 @@ async function main() {
         if (sqliteStore.isAvailable()) {
           sqliteStore.saveSkillsBatch(Array.from((index as any).skills.values()));
         }
-        console.log(`✅ Successfully imported ${imported} tools and saved to SQLite & .skillprism.json!`);
+        console.log(
+          `✅ Successfully imported ${imported} tools and saved to SQLite & .skillprism.json!`,
+        );
       }
     } catch (err: any) {
       console.error(`❌ Failed to connect to MCP server: ${err.message}`);
@@ -242,31 +249,61 @@ async function main() {
     if (isTrajectory) {
       console.log("\n📈 Running Complete Multi-Turn Task Trajectory Economics Benchmark...\n");
       const trajectory = await BenchmarkEngine.runTrajectoryBenchmark(fullBenchmarkCatalog);
-      console.log(`📦 Catalog Size:                     ${trajectory.catalogSize} Enterprise Tools`);
+      console.log(
+        `📦 Catalog Size:                     ${trajectory.catalogSize} Enterprise Tools`,
+      );
       console.log(`🔄 Task Trajectory Lifetime:         ${trajectory.totalTurns} Turns`);
-      console.log(`🎯 Task Success Rate:                 ${(trajectory.taskSuccessRate * 100).toFixed(0)}% (Discovered, Loaded, Executed, Inspected)`);
-      console.log(`🔴 Monolithic Cumulative Tokens:     ~${trajectory.monolithicTotalTokens} tokens`);
-      console.log(`   - Schema Preload Overhead:        ~${trajectory.monolithicSchemaTokensPerTurn * trajectory.totalTurns} tokens`);
-      console.log(`   - Raw Uncompacted Payloads:       ~${trajectory.monolithicRawPayloadTokens} tokens`);
-      console.log(`🟢 SkillPrism Cumulative Tokens:      ~${trajectory.skillPrismTotalTokens} tokens`);
-      console.log(`   - Zero-State Meta-Tools:          ~${trajectory.skillPrismZeroStateTokens} tokens`);
-      console.log(`   - Search & Load Discovery:        ~${trajectory.skillPrismSearchOverheadTokens} tokens`);
-      console.log(`   - Active Tool Ephemeral Schema:   ~${trajectory.skillPrismActiveSchemaTokens} tokens`);
-      console.log(`   - Compacted Semantic Receipt:     ~${trajectory.skillPrismCompactedPayloadTokens} tokens`);
-      console.log(`   - Receipt Inspection Queries:     ~${trajectory.skillPrismInspectionTokens} tokens`);
+      console.log(
+        `🎯 Task Success Rate:                 ${(trajectory.taskSuccessRate * 100).toFixed(0)}% (Discovered, Loaded, Executed, Inspected)`,
+      );
+      console.log(
+        `🔴 Monolithic Cumulative Tokens:     ~${trajectory.monolithicTotalTokens} tokens`,
+      );
+      console.log(
+        `   - Schema Preload Overhead:        ~${trajectory.monolithicSchemaTokensPerTurn * trajectory.totalTurns} tokens`,
+      );
+      console.log(
+        `   - Raw Uncompacted Payloads:       ~${trajectory.monolithicRawPayloadTokens} tokens`,
+      );
+      console.log(
+        `🟢 SkillPrism Cumulative Tokens:      ~${trajectory.skillPrismTotalTokens} tokens`,
+      );
+      console.log(
+        `   - Zero-State Meta-Tools:          ~${trajectory.skillPrismZeroStateTokens} tokens`,
+      );
+      console.log(
+        `   - Search & Load Discovery:        ~${trajectory.skillPrismSearchOverheadTokens} tokens`,
+      );
+      console.log(
+        `   - Active Tool Ephemeral Schema:   ~${trajectory.skillPrismActiveSchemaTokens} tokens`,
+      );
+      console.log(
+        `   - Compacted Semantic Receipt:     ~${trajectory.skillPrismCompactedPayloadTokens} tokens`,
+      );
+      console.log(
+        `   - Receipt Inspection Queries:     ~${trajectory.skillPrismInspectionTokens} tokens`,
+      );
       console.log(`🚀 Net Trajectory Token Savings:     ${trajectory.netTokenSavingsPercent}%`);
-      console.log(`⚡ Token Efficiency Multiplier:      ${trajectory.tokenEfficiencyMultiplier}x\n`);
+      console.log(
+        `⚡ Token Efficiency Multiplier:      ${trajectory.tokenEfficiencyMultiplier}x\n`,
+      );
     } else {
       const metrics = BenchmarkEngine.runComparison(fullBenchmarkCatalog);
       console.log(`📦 Catalog Size: ${metrics.catalogSize} Enterprise Tools`);
-      console.log(`🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`);
-      console.log(`🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`);
+      console.log(
+        `🔴 Unoptimized Preload Zero-State: ~${metrics.unoptimizedZeroStateTokens} tokens`,
+      );
+      console.log(
+        `🟢 SkillPrism JIT Zero-State:       ~${metrics.skillPrismZeroStateTokens} tokens`,
+      );
       console.log(`🚀 Upfront Token Savings:           ${metrics.tokenSavingsPercentage}%`);
       console.log(`⏱️ Average Search Latency:          ${metrics.searchLatencyMs} ms`);
       console.log(
         `💾 Payload Compaction Savings:      ${metrics.averageExecutionCompactionSavingsPercent}%\n`,
       );
-      console.log("💡 Tip: Run 'skillprism benchmark --trajectory' to measure complete multi-turn lifecycle economics.\n");
+      console.log(
+        "💡 Tip: Run 'skillprism benchmark --trajectory' to measure complete multi-turn lifecycle economics.\n",
+      );
     }
   } else if (command === "sync") {
     console.log("\n🌐 Ingesting Tools into Out-of-Context Index...\n");
@@ -384,6 +421,28 @@ async function main() {
         enableSessionIsolation: isolateSessions,
       });
     }
+  } else if (command === "graph" || command === "visualize") {
+    const { buildVisualGraphData, exportGraphVisualizerFile } = await import(
+      "./graph-visualizer.js"
+    );
+    let outPath = "skillprism-graph.html";
+    const outIdx = args.indexOf("--output");
+    if (outIdx !== -1 && args[outIdx + 1]) outPath = args[outIdx + 1];
+
+    const allSkills = index.getAllSkills ? index.getAllSkills() : sampleSkills;
+    const graphData = buildVisualGraphData(allSkills);
+    exportGraphVisualizerFile(graphData, outPath);
+    console.log(`\n🔮 Interactive D3 Tool Graph Explorer generated at: ${outPath}`);
+    console.log(
+      `   Tools: ${graphData.metrics.totalTools} | Categories: ${graphData.metrics.totalCategories} | Connections: ${graphData.metrics.totalEdges}`,
+    );
+  } else if (command === "budget") {
+    const { inferModelContextWindow, computeContextBudget } = await import("./context-budget.js");
+    const targetModel = args[1] || "claude-3-5-sonnet";
+    const { capacityTokens, modelName } = inferModelContextWindow(targetModel);
+    const budget = computeContextBudget(capacityTokens, modelName);
+    console.log(`\n🧠 Context Window Dynamic Budget for '${modelName}':`);
+    console.log(JSON.stringify(budget, null, 2));
   } else if (command === "stats") {
     const stats = index.getStats();
     console.log("\n📊 SkillPrism Index Telemetry:");
@@ -409,6 +468,8 @@ USAGE:
                    [--max-body-size <N>]   Maximum HTTP payload size in bytes (default: 2MB)
                    [--isolate-sessions]    Enable multi-tenant session isolation (mcp-session-id)
                    [--config <file>]       Path to custom MCP servers config (default: .mcp.json)
+  skillprism graph [--output <file.html>]  Render interactive D3 visual graph of tool clusters & heatmaps
+  skillprism budget [model-name]           Inspect dynamic context window budget for host LLM
   skillprism stats                         Inspect catalog token savings and metrics
 
 EXAMPLES:

@@ -87,9 +87,8 @@ export class SkillIndex {
           : undefined;
 
     // 1. Load precomputed vectors
-    const storedVectors = "loadAllVectors" in store
-      ? (store as any).loadAllVectors()
-      : store.loadVectors();
+    const storedVectors =
+      "loadAllVectors" in store ? (store as any).loadAllVectors() : store.loadVectors();
 
     const vectorMap = storedVectors instanceof Map ? storedVectors : new Map<string, number[]>();
 
@@ -224,6 +223,13 @@ export class SkillIndex {
    */
   public get(id: string): SkillDefinition | undefined {
     return this.skills.get(id);
+  }
+
+  /**
+   * Returns all registered skills in the in-memory index
+   */
+  public getAllSkills(): SkillDefinition[] {
+    return Array.from(this.skills.values());
   }
 
   /**

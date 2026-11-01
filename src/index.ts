@@ -11,3 +11,7 @@ export * from "./sqlite-store.js";
 export * from "./embeddings.js";
 export * from "./upstream.js";
 export * from "./init.js";
+export * from "./context-budget.js";
+export * from "./few-shot-synthesizer.js";
+export * from "./federation.js";
+export * from "./graph-visualizer.js";

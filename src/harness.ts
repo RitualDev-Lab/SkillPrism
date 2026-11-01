@@ -47,16 +47,27 @@ export class JitHarness {
   private activeSkills: Map<string, ActivatedSkillTurn> = new Map();
   private defaultTtlTurns: number;
   private defaultIdleTtlMs: number;
+  private maxActiveSkills = 10;
   private onToolsChangedListeners: Array<() => void> = [];
 
   constructor(
     index: SkillIndex,
     defaultTtlTurns = 3,
     defaultIdleTtlMs = 1000 * 60 * 10,
+    maxActiveSkills = 10,
   ) {
     this.index = index;
     this.defaultTtlTurns = defaultTtlTurns;
     this.defaultIdleTtlMs = defaultIdleTtlMs;
+    this.maxActiveSkills = maxActiveSkills;
+  }
+
+  public getMaxActiveSkills(): number {
+    return this.maxActiveSkills;
+  }
+
+  public setMaxActiveSkills(limit: number): void {
+    this.maxActiveSkills = Math.max(1, limit);
   }
 
   public getDefaultTtlTurns(): number {
@@ -234,6 +245,12 @@ export class JitHarness {
       }
 
       const toolSchema = this.convertToToolDefinition(skill);
+
+      // Enforce dynamic budget ceiling on concurrent active tools
+      if (this.activeSkills.size >= this.maxActiveSkills && !this.activeSkills.has(skillId)) {
+        const oldestKey = this.activeSkills.keys().next().value;
+        if (oldestKey) this.activeSkills.delete(oldestKey);
+      }
 
       const now = Date.now();
       this.activeSkills.set(skillId, {
