@@ -1,0 +1,32 @@
+# SkillPrism
+> Progressive Skill Disclosure & Context Compaction Engine for Autonomous AI Coding Agents
+
+SkillPrism solves the tool-schema bloat and attention dilution problem for autonomous AI coding agents (Claude Code, Cursor, Windsurf, Codex, Antigravity) by indexing hundreds of MCP tool schemas out-of-context and injecting only what the model needs, right when it needs it.
+
+Website: https://ritualdev.in/skillprism/
+Repository: https://github.com/RitualDev-Lab/SkillPrism
+Extension: https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense
+License: Apache-2.0
+
+## Key Benchmarks
+- Context Compression: 96.7% prompt token reduction (from 84,500 down to 2,150 tokens)
+- Index Search Latency: P99 < 0.1ms BM25 local memory, < 14ms Redis VPC cluster
+- Memory Footprint: < 12MB RAM for 1,000 indexed tools
+
+## Quick Start CLI
+```bash
+# Search tool index by natural intent
+npx @ritualdev-lab/skillprism search "postgres database query"
+
+# Compact conversation context receipts
+npx @ritualdev-lab/skillprism compact --max-tokens 2000
+
+# Deploy Shared Team Redis VPC Cluster
+docker compose -f docker-compose.redis-vpc.yml up -d
+```
+
+## Core Architectural Primitives
+1. **Zero-State Discovery**: Prompts initialize with minimal meta-tools (`search_skills` and `load_skill`) totaling < 200 tokens.
+2. **JIT Dynamic Schema Injection**: Ephemeral injection loads exact Zod/JSON schemas only during the active turn.
+3. **Semantic Query Receipts**: Heavy database rows and API return payloads are compacted into verifiable surrogate receipts.
+4. **Team Shared Redis VPC Hub**: Centralizes embeddings and schemas across developer fleets running Cursor and Windsurf to eliminate duplicate indexing costs.

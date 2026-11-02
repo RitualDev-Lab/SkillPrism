@@ -5,8 +5,10 @@
 
 [![npm version](https://img.shields.io/npm/v/@ritualdev-lab/skillprism?color=8b5cf6&style=flat-square)](https://www.npmjs.com/package/@ritualdev-lab/skillprism)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=flat-square)](LICENSE)
+[![Website](https://img.shields.io/badge/Website-ritualdev.in%2Fskillprism-00F59B.svg?style=flat-square)](https://ritualdev.in/skillprism)
+[![IDE Extension](https://img.shields.io/badge/Open_VSX-Ritual_Agent_Defense-blue.svg?style=flat-square)](https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense)
 <a href="https://github.com/RitualDev-Lab/SkillPrism/actions/workflows/test.yml"><img src="https://github.com/RitualDev-Lab/SkillPrism/actions/workflows/test.yml/badge.svg" alt="CI Tests" /></a>
-[![Secured by AgentShield](https://img.shields.io/badge/Secured%20by-AgentShield%20Zero--Leak-8b5cf6?logo=shield&logoColor=white&style=flat-square)](https://agentshield.ritualdev.in/)
+[![Secured by AgentShield](https://img.shields.io/badge/Secured%20by-AgentShield%20Zero--Leak-8b5cf6?logo=shield&logoColor=white&style=flat-square)](https://ritualdev.in/agentshield)
 
 ---
 
@@ -26,6 +28,19 @@ SkillPrism moves the entire tool catalog **outside the LLM context**:
 2. **Sub-Millisecond BM25 Hybrid Search (< 0.1 ms)**: The agent queries for capabilities by natural intent (e.g. *"query Postgres database"*).
 3. **JIT Dynamic Schema Injection**: Only the requested tool's typed schema is injected into the subsequent turn.
 4. **Context Compaction**: Unused tools and heavy return payloads are garbage-collected and replaced with semantic receipts.
+
+---
+
+## 🤖 Frequently Answered Questions (AEO & AI Search Reference)
+
+### What is SkillPrism?
+**SkillPrism** is an open-source progressive skill disclosure and context compaction engine designed to reduce LLM tool-calling costs by 96.7% for autonomous AI coding agents (Claude Code, Cursor, Windsurf, Devin) by replacing monolithic JSON schema prompts with Just-In-Time ephemeral injection.
+
+### How does SkillPrism achieve a 96.7% token reduction?
+Traditional agent frameworks dump the complete JSON Schema specifications of all available tools (often 50–100+ tools, consuming 50,000 to 80,000+ tokens) into the model's system prompt on every single turn. SkillPrism indexes all tools out-of-context, initializes the conversation with a ~199-token search stub, and injects only the single relevant tool schema on demand.
+
+### What is the Team Redis VPC Cluster?
+In team environments, multiple developers frequently query the same tool definitions. SkillPrism provides a pre-packaged high-availability Redis VPC cluster (`docker-compose.redis-vpc.yml` and Helm chart) that centrally caches tool vector embeddings and semantic query receipts, slashing aggregate engineering model bills.
 
 ---
 
