@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # ─── 1. Primary Redis Node (Embedding & Receipt Cache) ─────────────────
+  redis-primary:
+    image: redis:7.2-alpine
+    container_name: skillprism-redis-primary
+    command: >
+      redis-server
+      --requirepass "${REDIS_PASSWORD:-skillprism_secure_vault_2026}"
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --save 900 1
+      --save 300 10
+      --tcp-keepalive 300
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-skillprism_secure_vault_2026}
+    volumes:
+      - redis_primary_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-skillprism_secure_vault_2026}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - skillprism-vpc
+    restart: unless-stopped
+
+  # ─── 2. HA Read Replica (High Throughput Tool Embedding Lookups) ───────
+  redis-replica:
+    image: redis:7.2-alpine
+    container_name: skillprism-redis-replica
+    command: >
+      redis-server
+      --replicaof redis-primary 6379
+      --masterauth "${REDIS_PASSWORD:-skillprism_secure_vault_2026}"
+      --requirepass "${REDIS_PASSWORD:-skillprism_secure_vault_2026}"
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+    volumes:
+      - redis_replica_data:/data
+    networks:
+      - skillprism-vpc
+    restart: unless-stopped
+
+  # ─── 3. SkillPrism Central Team Hub Service ───────────────────────────
+  skillprism-hub:
+    image: ghcr.io/ritualdev-lab/skillprism:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skillprism-team-hub
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - SKILLPRISM_REDIS_URL=redis://:${REDIS_PASSWORD:-skillprism_secure_vault_2026}@redis-primary:6379/0
+      - SKILLPRISM_REPLICA_URL=redis://:${REDIS_PASSWORD:-skillprism_secure_vault_2026}@redis-replica:6379/0
+      - SKILLPRISM_SHARED_CACHE=true
+      - SKILLPRISM_CACHE_TTL_DAYS=30
+      - SKILLPRISM_ORG_ID=${SKILLPRISM_ORG_ID:-ritual-team-org}
+    ports:
+      - "8080:8080"
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+    networks:
+      - skillprism-vpc
+    restart: unless-stopped
+
+  # ─── 4. Prometheus Redis Metrics Exporter (Token Savings Telemetry) ────
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0-alpine
+    container_name: skillprism-redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis-primary:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-skillprism_secure_vault_2026}
+    ports:
+      - "127.0.0.1:9121:9121"
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+    networks:
+      - skillprism-vpc
+    restart: unless-stopped
+
+volumes:
+  redis_primary_data:
+  redis_replica_data:
+
+networks:
+  skillprism-vpc:
+    driver: bridge

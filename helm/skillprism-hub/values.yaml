@@ -1,0 +1,95 @@
+# Default values for skillprism-hub.
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/ritualdev-lab/skillprism
+  pullPolicy: IfNotPresent
+  tag: "0.2.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: skillprism.internal.corp
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: skillprism-hub-tls
+      hosts:
+        - skillprism.internal.corp
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+
+# Built-in High-Availability Redis Configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7.2-alpine"
+    pullPolicy: IfNotPresent
+  password: "skillprism_prod_redis_vault_secret"
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "gp3"
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 4Gi
+    requests:
+      cpu: 250m
+      memory: 1Gi
+
+# External Redis cluster configuration (if redis.enabled is false)
+externalRedis:
+  url: ""
+  tlsEnabled: true
+
+config:
+  sharedCacheEnabled: true
+  cacheTtlDays: 30
+  maxTokensPerBatch: 128000
+  logLevel: "info"

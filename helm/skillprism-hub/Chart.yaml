@@ -1,0 +1,19 @@
+apiVersion: v2
+name: skillprism-hub
+description: Centralized Shared Embedding Cache & Multi-Agent Skill Registry for SkillPrism
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - skillprism
+  - ai-agent
+  - redis
+  - embedding-cache
+  - mcp
+  - token-savings
+home: https://github.com/RitualDev-Lab/SkillPrism
+sources:
+  - https://github.com/RitualDev-Lab/SkillPrism
+maintainers:
+  - name: RitualDev Lab
+    email: team@ritualdev.com
