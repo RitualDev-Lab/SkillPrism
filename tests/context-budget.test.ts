@@ -29,6 +29,7 @@ describe("SkillPrism Context Window Dynamic Budgeting Suite", () => {
         assert.strictEqual(inferModelContextWindow("unknown-custom-model").capacityTokens, 65536);
       } finally {
         if (prev !== undefined) process.env.CONTEXT_WINDOW_SIZE = prev;
+        // biome-ignore lint/performance/noDelete: process.env cleanup in test
         else delete process.env.CONTEXT_WINDOW_SIZE;
       }
     });
