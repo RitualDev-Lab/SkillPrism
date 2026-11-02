@@ -42,7 +42,8 @@
   "author": "RitualDev Lab (https://github.com/RitualDev-Lab)",
   "license": "Apache-2.0",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsup",
