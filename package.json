@@ -16,28 +16,25 @@
     "type": "git",
     "url": "git+https://github.com/RitualDev-Lab/SkillPrism.git"
   },
-  "homepage": "https://skillprism.ritualdev.in",
+  "homepage": "https://ritualdev.in/skillprism/",
   "bugs": {
     "url": "https://github.com/RitualDev-Lab/SkillPrism/issues",
     "email": "support@ritualdev.in"
   },
   "keywords": [
+    "ai-agent-security",
+    "mcp-server",
+    "sandbox",
+    "developer-tools",
+    "cursor-ide",
+    "windsurf-ai",
+    "llm-security",
     "skillprism",
-    "mcp",
-    "model-context-protocol",
-    "ai-agents",
-    "claude-code",
-    "cursor",
-    "windsurf",
-    "antigravity",
     "context-window",
     "token-optimization",
     "progressive-disclosure",
     "context-compaction",
-    "semantic-receipts",
-    "bm25",
-    "jit-tools",
-    "llm-tools"
+    "semantic-receipts"
   ],
   "author": "RitualDev Lab (https://github.com/RitualDev-Lab)",
   "license": "Apache-2.0",
