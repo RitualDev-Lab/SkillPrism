@@ -77,7 +77,9 @@ describe("Phase 6 Roadmap Suite: Embeddings, MCP Prompts/Resources, Compaction, 
         name: "summarize_pr",
         description: "Generates release notes summary from PR description",
         handler: async (args) => ({
-          messages: [{ role: "user", content: { type: "text", text: `Summarize: PR-${args.pr_id || "1"}` } }],
+          messages: [
+            { role: "user", content: { type: "text", text: `Summarize: PR-${args.pr_id || "1"}` } },
+          ],
         }),
       });
 

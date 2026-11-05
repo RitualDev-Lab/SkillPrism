@@ -136,7 +136,15 @@ describe("Phase 1: Out-of-Context Skill Index & BM25 Catalog Suite", () => {
       const loaded = store.loadSkills();
       assert.ok(loaded.some((s: any) => s.id === "test_sqlite_skill"));
 
-      store.saveReceipt("receipt:test:123", "test_tool", "Summary test", { foo: "bar" }, 100, 20, Date.now() + 10000);
+      store.saveReceipt(
+        "receipt:test:123",
+        "test_tool",
+        "Summary test",
+        { foo: "bar" },
+        100,
+        20,
+        Date.now() + 10000,
+      );
       const data = store.loadReceiptData("receipt:test:123");
       assert.deepEqual(data, { foo: "bar" });
 
@@ -147,5 +155,3 @@ describe("Phase 1: Out-of-Context Skill Index & BM25 Catalog Suite", () => {
     }
   });
 });
-
-

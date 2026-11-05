@@ -15,3 +15,6 @@ export * from "./context-budget.js";
 export * from "./few-shot-synthesizer.js";
 export * from "./federation.js";
 export * from "./graph-visualizer.js";
+export * from "./rrf-discovery.js";
+export * from "./two-tier-cache.js";
+export * from "./taint-tracker.js";

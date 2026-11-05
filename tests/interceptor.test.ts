@@ -203,7 +203,11 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
       assert.equal(typeof tool.inputSchema, "object", "inputSchema must be an object");
       assert.equal(Array.isArray(tool.inputSchema), false, "inputSchema must not be an array");
       assert.equal(tool.inputSchema.type, "object", "inputSchema.type must be 'object'");
-      assert.equal(typeof tool.inputSchema.properties, "object", "inputSchema.properties must be an object");
+      assert.equal(
+        typeof tool.inputSchema.properties,
+        "object",
+        "inputSchema.properties must be an object",
+      );
     }
 
     const s3Tool = tools.find((t: any) => t.name === "aws_s3_upload");
@@ -356,7 +360,9 @@ describe("Phase 3: Ephemeral Schema Injection & MCP Protocol Interceptor Suite",
 
   test("Phase 1 (S1) Regression: multimodal standard MCP response preserves image blocks while compacting text blocks", async () => {
     const { interceptor, harness } = setupTestEnvironment();
-    const rawImageBytes = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+".repeat(500);
+    const rawImageBytes = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+".repeat(
+      500,
+    );
 
     interceptor.setUpstreamExecutor(async () => {
       return {

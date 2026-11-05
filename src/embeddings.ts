@@ -31,7 +31,9 @@ export class TransformerEmbeddingEngine {
     try {
       // Dynamic import to keep @xenova/transformers optional and zero-network by default
       const mod = await import("@xenova/transformers" as any);
-      TransformerEmbeddingEngine.isSupported = Boolean(mod && (mod.pipeline || mod.default?.pipeline));
+      TransformerEmbeddingEngine.isSupported = Boolean(
+        mod && (mod.pipeline || mod.default?.pipeline),
+      );
       return TransformerEmbeddingEngine.isSupported;
     } catch {
       TransformerEmbeddingEngine.isSupported = false;
@@ -44,7 +46,10 @@ export class TransformerEmbeddingEngine {
    */
   private static async getExtractor(options: TransformerEmbeddingOptions = {}): Promise<any> {
     const modelName = options.model || TransformerEmbeddingEngine.loadedModelName;
-    if (!TransformerEmbeddingEngine.extractorPromise || modelName !== TransformerEmbeddingEngine.loadedModelName) {
+    if (
+      !TransformerEmbeddingEngine.extractorPromise ||
+      modelName !== TransformerEmbeddingEngine.loadedModelName
+    ) {
       TransformerEmbeddingEngine.loadedModelName = modelName;
       TransformerEmbeddingEngine.extractorPromise = (async () => {
         const { pipeline, env } = await import("@xenova/transformers" as any);
@@ -63,7 +68,10 @@ export class TransformerEmbeddingEngine {
   /**
    * Generates dense neural semantic embedding vector using local ONNX transformer
    */
-  public static async embed(text: string, options: TransformerEmbeddingOptions = {}): Promise<number[]> {
+  public static async embed(
+    text: string,
+    options: TransformerEmbeddingOptions = {},
+  ): Promise<number[]> {
     const available = await TransformerEmbeddingEngine.isAvailable();
     if (!available) {
       // Graceful fallback to 64-dim n-gram hashing
@@ -84,7 +92,10 @@ export class TransformerEmbeddingEngine {
   /**
    * Batch embedding generation
    */
-  public static async embedBatch(texts: string[], options: TransformerEmbeddingOptions = {}): Promise<number[][]> {
+  public static async embedBatch(
+    texts: string[],
+    options: TransformerEmbeddingOptions = {},
+  ): Promise<number[][]> {
     const results: number[][] = [];
     for (const text of texts) {
       results.push(await TransformerEmbeddingEngine.embed(text, options));

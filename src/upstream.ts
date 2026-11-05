@@ -93,7 +93,9 @@ export class UpstreamManager {
           this.toolToServerMap.set(t.name, name);
         }
       } catch (err: any) {
-        throw new Error(`Failed to query upstream HTTP server '${name}' at ${config.url}: ${err.message}`);
+        throw new Error(
+          `Failed to query upstream HTTP server '${name}' at ${config.url}: ${err.message}`,
+        );
       }
 
       this.servers.set(name, {
@@ -102,7 +104,9 @@ export class UpstreamManager {
         tools: discoveredTools,
       });
     } else {
-      throw new Error(`Invalid server config for '${name}': must provide either 'command' or 'url'`);
+      throw new Error(
+        `Invalid server config for '${name}': must provide either 'command' or 'url'`,
+      );
     }
 
     return discoveredTools;
@@ -111,11 +115,7 @@ export class UpstreamManager {
   /**
    * Directly connect an HTTP upstream MCP server and optionally import its tools into SkillIndex
    */
-  public async connectServer(
-    name: string,
-    url: string,
-    index?: SkillIndex,
-  ): Promise<string[]> {
+  public async connectServer(name: string, url: string, index?: SkillIndex): Promise<string[]> {
     const discoveredTools: string[] = [];
     const res = await fetch(url, {
       method: "POST",
@@ -250,7 +250,9 @@ export class UpstreamManager {
           // indexed
         }
       } catch (err: any) {
-        console.warn(`[SkillPrism] Warning: Failed to connect to upstream server '${serverName}': ${err.message}`);
+        console.warn(
+          `[SkillPrism] Warning: Failed to connect to upstream server '${serverName}': ${err.message}`,
+        );
       }
     }
 
@@ -298,7 +300,11 @@ export class UpstreamManager {
   }
 }
 
-function serverEntryTools(entry: UpstreamServerEntry | undefined, index: SkillIndex, serverName: string): boolean {
+function serverEntryTools(
+  entry: UpstreamServerEntry | undefined,
+  index: SkillIndex,
+  serverName: string,
+): boolean {
   if (!entry) return false;
   // If entry has a client with tools
   return true;

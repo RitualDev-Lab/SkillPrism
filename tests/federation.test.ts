@@ -1,8 +1,8 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
+import type { SemanticReceipt } from "../src/compactor.js";
 import { FederatedSkillRegistry, LocalPeerBusTransport } from "../src/federation.js";
 import type { SkillDefinition } from "../src/types.js";
-import type { SemanticReceipt } from "../src/compactor.js";
 
 describe("SkillPrism Multi-Agent Federated Skill Registry Suite", () => {
   it("initializes peer nodes and tracks active heartbeats", async () => {

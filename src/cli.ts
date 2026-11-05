@@ -2,8 +2,8 @@ import { BenchmarkEngine } from "./benchmark.js";
 import { DevShelfSync } from "./devshelf-sync.js";
 import { JitHarness } from "./harness.js";
 import { SkillIndex } from "./index-store.js";
-import { McpProtocolInterceptor } from "./interceptor.js";
 import { initProject } from "./init.js";
+import { McpProtocolInterceptor } from "./interceptor.js";
 import { SkillPrismProxyServer } from "./proxy-server.js";
 import type { SkillDefinition } from "./types.js";
 

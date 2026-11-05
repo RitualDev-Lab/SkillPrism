@@ -130,8 +130,7 @@ export class BenchmarkEngine {
     const monolithicRawPayloadTokens = BenchmarkEngine.countTokens(
       JSON.stringify(heavyExecutionResult),
     );
-    const monolithicTotalTokens =
-      monolithicSchemaPerTurn * totalTurns + monolithicRawPayloadTokens;
+    const monolithicTotalTokens = monolithicSchemaPerTurn * totalTurns + monolithicRawPayloadTokens;
 
     // 2. SkillPrism Trajectory:
     const zeroStateTools = harness.getZeroStateTools();
@@ -140,7 +139,10 @@ export class BenchmarkEngine {
     // Turn 1: Search out-of-context registry
     const searchResults = index.search(searchQuery, 3);
     const foundTarget = searchResults.some(
-      (r) => r.skill.id === targetToolId || r.skill.name.toLowerCase().includes("database") || r.skill.category === "database",
+      (r) =>
+        r.skill.id === targetToolId ||
+        r.skill.name.toLowerCase().includes("database") ||
+        r.skill.category === "database",
     );
     const searchCallTokens = BenchmarkEngine.countTokens(
       JSON.stringify({ name: "search_skills", arguments: { intent: searchQuery } }),
@@ -171,7 +173,10 @@ export class BenchmarkEngine {
     // Turn 4: Inspect receipt subfield
     const turn4SchemaTokens = BenchmarkEngine.countTokens(JSON.stringify(harness.getActiveTools()));
     const inspectCallTokens = BenchmarkEngine.countTokens(
-      JSON.stringify({ name: "inspect_receipt", arguments: { ref: receipt?.ref, path: "preview" } }),
+      JSON.stringify({
+        name: "inspect_receipt",
+        arguments: { ref: receipt?.ref, path: "preview" },
+      }),
     );
     const inspected = compactor.inspectReceipt(receipt?.ref || "", "preview");
     const inspectResultTokens = BenchmarkEngine.countTokens(JSON.stringify(inspected));
