@@ -34,7 +34,7 @@ Submit a report privately via GitHub's Coordinated Vulnerability Disclosure:
 
 ### Option 2: Direct Security Team Dispatch
 Email our engineering response team:
-- **Email**: [`developer@ritualdev.com`](mailto:developer@ritualdev.com)
+- **Email**: [`security@ritualdev.in`](mailto:security@ritualdev.in)
 - **Subject**: `[SECURITY VULNERABILITY] @ritualdev-lab/agentshield`
 - **PGP Encryption**: Available upon request.
 
