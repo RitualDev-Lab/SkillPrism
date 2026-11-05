@@ -6,22 +6,23 @@ on:
       - 'v*'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   test-matrix:
     name: Test Matrix (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         node-version: [20, 22, 24]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0
         with:
           node-version: ${{ matrix.node-version }}
 
@@ -32,7 +33,7 @@ jobs:
         run: npm test
 
   build-and-attest:
-    name: Build & SLSA Provenance Attestation
+    name: Build, SLSA Provenance & SBOM
     needs: [test-matrix]
     runs-on: ubuntu-latest
     permissions:
@@ -40,10 +41,10 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0
         with:
           node-version: 22
 
@@ -54,37 +55,57 @@ jobs:
         run: npm run build
 
       - name: Generate SLSA Build Provenance Attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.0.0
         with:
           subject-path: 'dist/**'
 
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: ./
+          format: 'cyclonedx-json'
+          output-file: 'dist/skillprism-cyclonedx.sbom.json'
+          artifact-name: 'skillprism-cyclonedx.sbom.json'
+          upload-artifact: true
+          upload-release-assets: false
+
+      - name: Generate SPDX SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: ./
+          format: 'spdx-json'
+          output-file: 'dist/skillprism-spdx.sbom.json'
+          artifact-name: 'skillprism-spdx.sbom.json'
+          upload-artifact: true
+          upload-release-assets: false
+
+      - name: Upload Build & SBOM Artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.0
         with:
           name: dist-artifacts
           path: dist/
-          retention-days: 1
+          retention-days: 30
 
   dual-publish:
     name: Dual-Publish to npm & GitHub Packages
     needs: [build-and-attest]
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.0.0
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.0
         with:
           name: dist-artifacts
           path: dist/
@@ -99,5 +120,16 @@ jobs:
           echo "@ritualdev-lab:registry=https://npm.pkg.github.com" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
           npm publish --provenance=false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Attach SBOM Assets to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@c062e08bd5328157348241fa0833b7d8b97943b7 # v2.0.8
+        with:
+          generate_release_notes: true
+          files: |
+            dist/skillprism-cyclonedx.sbom.json
+            dist/skillprism-spdx.sbom.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
