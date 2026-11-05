@@ -1,4 +1,5 @@
-name: Publish Package & Release
+name: Publish Package & Sigstore Provenance
+
 on:
   release:
     types: [published]
@@ -7,15 +8,13 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   workflow_dispatch:
 
-permissions:
-  contents: write
-  packages: write
-  id-token: write
-
 jobs:
   publish-gpr:
     name: Publish to GitHub Packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -26,37 +25,33 @@ jobs:
           registry-url: "https://npm.pkg.github.com"
           scope: "@ritualdev-lab"
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci || npm install
 
-      - name: Run Test Suite
-        run: pnpm test
+      - name: Run Tests
+        run: npm test
 
-      - name: Build SkillPrism Bundles
-        run: pnpm run build
+      - name: Build SkillPrism
+        run: npm run build
 
       - name: Publish to GitHub Packages
         continue-on-error: true
         run: |
-          node -e "const pkg = require('./package.json'); pkg.publishConfig = { registry: 'https://npm.pkg.github.com' }; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');"
           echo "@ritualdev-lab:registry=https://npm.pkg.github.com" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> .npmrc
-          npm publish || echo "GitHub Packages publish skipped or already exists."
+          npm publish --provenance=false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
-
   publish-npm:
-    name: Publish to npm Registry
+    name: Publish to npm with Sigstore SLSA Provenance
     runs-on: ubuntu-latest
     if: github.repository == 'RitualDev-Lab/SkillPrism'
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -66,30 +61,21 @@ jobs:
           node-version: 22
           registry-url: "https://registry.npmjs.org"
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci || npm install
 
       - name: Run Test Suite
-        run: pnpm test
+        run: npm test
 
       - name: Build SkillPrism
-        run: pnpm run build
+        run: npm run build
 
-      - name: Publish to npm Registry
-        continue-on-error: true
-        run: |
-          if [ -n "${NPM_TOKEN}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-            pnpm publish --no-git-checks --access public || echo "npm publish failed or version already exists on npm."
-          else
-            echo "NPM_TOKEN secret is not set in repository secrets; skipping npm registry publish."
-          fi
+      - name: Generate SLSA Build Provenance Attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: 'dist/**'
+
+      - name: Publish to npm with Sigstore Provenance
+        run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
