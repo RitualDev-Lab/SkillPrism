@@ -47,7 +47,7 @@
     "dev": "tsup --watch",
     "test": "tsx --test",
     "benchmark": "tsx src/cli.ts benchmark",
-    "prepublishOnly": "pnpm run build && pnpm test && npm pack --dry-run",
+    "prepublishOnly": "npm run build && npm test && npm pack --dry-run",
     "lint": "biome lint .",
     "format": "biome format --write ."
   },
