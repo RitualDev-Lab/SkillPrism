@@ -1,63 +1,54 @@
-# Security Policy & Vulnerability Disclosure
+# 🛡️ RitualDev Lab Security Policy & Vulnerability Disclosure
 
-RitualDev Studio takes the security of autonomous AI infrastructure, secret defense runtimes, and developer tooling with utmost seriousness.
-
----
-
-## 🛡️ Supported Versions
-
-We actively provide security updates, regression patches, and zero-day mitigations for the following versions:
-
-| Version | Supported | Minimum Engine | SLA Coverage |
-| :--- | :---: | :---: | :--- |
-| **0.2.x** | ✅ **Active** | Node.js >= 20.0.0 | **Critical & High: < 24 Hours** |
-| 0.1.x | ⚠️ End-of-Life | Node.js >= 18.0.0 | Upgrade to v0.2.x recommended |
+> **Applies to**: All 25 repositories under `@RitualDev-Lab`  
+> **Official Intake**: `security@ritualdev.in`  
+> **PGP Public Key**: [https://ritualdev.in/pgp-key.txt](https://ritualdev.in/pgp-key.txt)  
+> **Security Policy (RFC 9116)**: [https://ritualdev.in/.well-known/security.txt](https://ritualdev.in/.well-known/security.txt)  
+> **Trust Center**: [https://ritualdev.in/trust](https://ritualdev.in/trust)  
+> **Effective Date**: November 2026  
 
 ---
 
-## ⏱️ Guaranteed 24-Hour Response SLA
+## 1. Supported Versions & SLA Guarantees
 
-We commit to the following response timeline for all reported vulnerabilities:
-- **Initial Triage & Acknowledgment**: **< 24 Hours** (guaranteed).
-- **Vulnerability Reproduction & Severity Assessment**: **< 48 Hours**.
-- **Security Advisory Drafting & Patch Release**: **< 72 Hours** for Critical/High CVEs.
+RitualDev Lab provides active security patching and vulnerability mitigation for the following operational software branches:
 
----
-
-## 🚨 Reporting a Vulnerability
-
-Please **DO NOT** create public GitHub issues or discussions for undisclosed security vulnerabilities.
-
-### Option 1: GitHub Private Security Advisory (Preferred)
-Submit a report privately via GitHub's Coordinated Vulnerability Disclosure:
-👉 **[Report a Security Advisory on GitHub](https://github.com/RitualDev-Lab/AgentShield/security/advisories/new)**
-
-### Option 2: Direct Security Team Dispatch
-Email our engineering response team:
-- **Email**: [`security@ritualdev.in`](mailto:security@ritualdev.in)
-- **Subject**: `[SECURITY VULNERABILITY] @ritualdev-lab/agentshield`
-- **PGP Encryption**: Available upon request.
-
-Please include:
-1. Proof-of-Concept (PoC) code or reproduction script.
-2. Attack vector taxonomy (e.g. CWE-77, ReDoS, Sandbox Bypass, Proc Environ Exfiltration).
-3. Impact assessment on host environment or client agent runtime.
+| Project / Repository | Supported Versions | Security Support Status | Patch Turnaround SLA |
+| :--- | :--- | :---: | :---: |
+| **AgentShield** (`@ritualdev-lab/agentshield`) | `v0.2.x`, `main` | ✅ Active (24/7/365) | **< 24 Hours** (Critical) |
+| **DBShield** (`@ritualdev-lab/dbshield`) | `v0.2.x`, `main` | ✅ Active (24/7/365) | **< 24 Hours** (Critical) |
+| **SkillPrism** (`@ritualdev-lab/skillprism`) | `v0.1.x`, `main` | ✅ Active | **< 48 Hours** |
+| **WebSecAuditor** (`web-sec-auditor`) | `v0.1.x`, `main` | ✅ Active | **< 48 Hours** |
+| **GitWhisper** (`@ritualdev-lab/gitwhisper`) | `v0.1.x`, `main` | ✅ Active | **< 48 Hours** |
+| **Ritual Agent Defense IDE** | Latest published | ✅ Active | **< 48 Hours** |
+| **ritualdev-web** (`ritualdev.in`) | Production `main` | ✅ Active | **< 12 Hours** |
 
 ---
 
-## 🏛️ Safe Harbor Commitment
+## 2. Reporting a Security Vulnerability
 
-RitualDev Studio will **never** pursue legal action against security researchers, ethical hackers, or academic teams who:
-- Act in good faith to identify vulnerabilities.
-- Provide us reasonable time to release a patch before public disclosure.
-- Avoid accessing, destroying, or exfiltrating user data or production environments.
+If you discover a security vulnerability, zero-day evasion, or sensitive data leakage within any RitualDev Lab repository or utility, please report it through our coordinated disclosure channels:
 
-Researchers reporting verified vulnerabilities will be credited on our **[Security Hall of Fame](https://ritualdev.in/trust)**.
+1. **Email Intake**: Dispatch encrypted details to `security@ritualdev.in`.
+2. **PGP Encryption**: For confidential findings, encrypt communications using our official PGP key at [https://ritualdev.in/pgp-key.txt](https://ritualdev.in/pgp-key.txt).
+3. **GitHub Private Vulnerability Reporting**: You may also utilize GitHub's Private Vulnerability Reporting feature on any individual repository under `RitualDev-Lab`.
+
+### Response & Triage SLA
+- **Initial Response & Human Triage**: **< 1 hour** for P1 critical severity; **< 4 hours** for P2 high severity.
+- **Triage Assessment & Status Updates**: Provided every **12 hours** until full resolution.
+- **Coordinated Disclosure Policy**: We request a **90-day embargo** following notification to allow for patch deployment and upstream consumer notification before public disclosure.
 
 ---
 
-## 📜 Compliance & Audit Attestations
+## 3. Statutory Compliance & Data Protection
 
-For SOC 2 Type II, ISO 27001, and India DPDP Act 2023 compliance verification:
-- **Trust Portal**: [https://ritualdev.in/trust](https://ritualdev.in/trust)
-- **Interactive Playground**: [https://ritualdev.in/playground](https://ritualdev.in/playground)
+RitualDev operates under strict **Zero-Data-Retention** and **Local-First** principles:
+- **Indian Digital Personal Data Protection Act, 2023 (DPDP Act)**: Zero lines of customer code, API tokens, or prompts are transmitted or stored by RitualDev systems.
+- **European Union General Data Protection Regulation (GDPR)**: Execution occurs 100% locally on developer machines or inside customer VPC runners; zero cross-border personal data transfers occur under Chapter V.
+- **NIST SP 800-218 & US Executive Order 14028**: All releases include automated CycloneDX / SPDX Software Bill of Materials (SBOMs) with cryptographic SLSA Level 3 provenance.
+
+---
+
+## 4. Bounty & Hall of Fame Acknowledgments
+
+Valid, responsible security vulnerability disclosures are publicly recognized on our [Security Hall of Fame](https://ritualdev.in/advisories) and eligible for discretionary bounties based on CVSS 3.1 severity impact.
