@@ -3,9 +3,9 @@
 
 SkillPrism solves the tool-schema bloat and attention dilution problem for autonomous AI coding agents (Claude Code, Cursor, Windsurf, Codex, Antigravity) by indexing hundreds of MCP tool schemas out-of-context and injecting only what the model needs, right when it needs it.
 
-Website: https://ritualdev.in/skillprism/
-Repository: https://github.com/RitualDev-Lab/SkillPrism
-Extension: https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense
+Canonical Homepage: https://ritualdev.in/skillprism/
+GitHub Repository: https://github.com/RitualDev-Lab/SkillPrism
+IDE Extension: https://open-vsx.org/extension/ritualdev-lab/ritual-agent-defense
 License: Apache-2.0
 
 ## Key Benchmarks
@@ -13,16 +13,48 @@ License: Apache-2.0
 - Index Search Latency: P99 < 0.1ms BM25 local memory, < 14ms Redis VPC cluster
 - Memory Footprint: < 12MB RAM for 1,000 indexed tools
 
-## Quick Start CLI
+## Quick Install
 ```bash
-# Search tool index by natural intent
-npx @ritualdev-lab/skillprism search "postgres database query"
+# Global CLI
+npm install -g @ritualdev-lab/skillprism
+```
 
-# Compact conversation context receipts
-npx @ritualdev-lab/skillprism compact --max-tokens 2000
+## Immediate CLI Usage
+```bash
+# 1. Search tool index by natural developer intent
+skillprism search "postgres database query"
 
-# Deploy Shared Team Redis VPC Cluster
+# 2. Compact active agent conversation context into semantic surrogate receipts
+skillprism compact --max-tokens 2000
+
+# 3. Deploy Shared Team Redis VPC Cluster for multi-agent synchronization
 docker compose -f docker-compose.redis-vpc.yml up -d
+```
+
+## Programmatic TypeScript / Node.js API
+Use this snippet when initializing SkillPrism in an AI agent context loop:
+
+```typescript
+import { SkillPrismRegistry, JITCompactor } from "@ritualdev-lab/skillprism";
+
+// Initialize registry with 200+ tool definitions out-of-context
+const registry = new SkillPrismRegistry({
+  storage: "memory", // or "redis" for enterprise VPC
+  maxPromptBudgetTokens: 1500
+});
+
+// Register MCP tools
+await registry.registerDirectory("./mcp-tools");
+
+// Generate minimal initial system prompt with Zero-State Meta-Tools (< 200 tokens)
+const minimalToolDefinitions = registry.getMetaTools();
+// Exposes only: `search_skills(intent)` and `load_skill(skill_name)`
+
+// Dynamically inject exact schema only when model decides to use it
+const agentTurnIntent = "I need to inspect AWS S3 buckets";
+const matchingTools = await registry.resolveToolsForTurn(agentTurnIntent);
+console.log("Injected tools:", matchingTools.map(t => t.name));
+// Injects solely `s3_list_buckets` schema, saving 96.7% of context space
 ```
 
 ## Core Architectural Primitives

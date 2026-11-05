@@ -16,28 +16,25 @@
     "type": "git",
     "url": "git+https://github.com/RitualDev-Lab/SkillPrism.git"
   },
-  "homepage": "https://skillprism.ritualdev.in",
+  "homepage": "https://ritualdev.in/skillprism/",
   "bugs": {
     "url": "https://github.com/RitualDev-Lab/SkillPrism/issues",
     "email": "support@ritualdev.in"
   },
   "keywords": [
+    "ai-agent-security",
+    "mcp-server",
+    "sandbox",
+    "developer-tools",
+    "cursor-ide",
+    "windsurf-ai",
+    "llm-security",
     "skillprism",
-    "mcp",
-    "model-context-protocol",
-    "ai-agents",
-    "claude-code",
-    "cursor",
-    "windsurf",
-    "antigravity",
     "context-window",
     "token-optimization",
     "progressive-disclosure",
     "context-compaction",
-    "semantic-receipts",
-    "bm25",
-    "jit-tools",
-    "llm-tools"
+    "semantic-receipts"
   ],
   "author": "RitualDev Lab (https://github.com/RitualDev-Lab)",
   "license": "Apache-2.0",
@@ -50,19 +47,19 @@
     "dev": "tsup --watch",
     "test": "tsx --test",
     "benchmark": "tsx src/cli.ts benchmark",
-    "prepublishOnly": "pnpm run build && pnpm test && npm pack --dry-run",
+    "prepublishOnly": "npm run build && npm test && npm pack --dry-run",
     "lint": "biome lint .",
     "format": "biome format --write ."
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.10.1",
-    "tsup": "^8.3.5",
+    "@types/node": "^26.6.6",
+    "tsup": "^9.0.0",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
-    "gpt-tokenizer": "^4.0.0"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "gpt-tokenizer": "^4.1.0"
   }
 }

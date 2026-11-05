@@ -1,0 +1,47 @@
+﻿name: Security Vulnerability or Secret Bypass
+description: Report a sandbox bypass, regex escape, or security hole in AgentShield
+title: "[SECURITY]: "
+labels: ["security", "p0-vulnerability"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🛡️ Responsible Disclosure Notice
+        If you have discovered a critical remote code execution or zero-day vulnerability that threatens user systems, please review our [SECURITY.md](../SECURITY.md) or disclose responsibly.
+
+        For command evasion techniques, bypasses, or pattern false-negatives, please report below with **synthetic dummy tokens** only.
+  - type: dropdown
+    id: vector
+    attributes:
+      label: Vulnerability Vector
+      description: What part of AgentShield is affected?
+      options:
+        - Shell Sandbox Evasion (e.g. subshell, obfuscation, new reader binary)
+        - Secret Pattern False-Negative (secret slipped through unredacted)
+        - CI/CD Gate Bypass
+        - Git Pre-Commit Hook Circumvention
+        - In-Flight Stdio Redaction Leak
+    validations:
+      required: true
+  - type: textarea
+    id: bypass-command
+    attributes:
+      label: Bypass Reproduction / Payload
+      description: Provide the command or code snippet demonstrating the bypass (USE SYNTHETIC SAMPLES ONLY).
+      placeholder: |
+        Command: npx @ritualdev_lab/agentshield exec "your-evasion-command"
+        Observed: Command executed without block
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Security Impact
+      description: What credential or resource could an autonomous agent leak via this vector?
+    validations:
+      required: true
+  - type: textarea
+    id: remediation
+    attributes:
+      label: Suggested Remediation
+      description: Recommended AST normalization, regex guard, or pattern rule update.

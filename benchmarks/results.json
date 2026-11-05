@@ -1,0 +1,10 @@
+{
+  "num_tools": 150,
+  "static_prompt_tokens": 24692,
+  "skillprism_initial_tokens": 117,
+  "skillprism_active_turn_tokens": 278,
+  "reduction_percentage": 98.9,
+  "cost_static_10k_turns_usd": 740.76,
+  "cost_skillprism_10k_turns_usd": 8.34,
+  "cost_saved_usd": 732.42
+}
