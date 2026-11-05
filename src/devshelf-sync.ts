@@ -170,7 +170,10 @@ export class DevShelfSync {
     let categorySkillsCount = 0;
     for (const [catName, catItems] of Object.entries(itemsByCategory)) {
       const catSlug = catName.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-      const sampleNames = catItems.slice(0, 5).map((i) => i.name).join(", ");
+      const sampleNames = catItems
+        .slice(0, 5)
+        .map((i) => i.name)
+        .join(", ");
       const allTags = Array.from(new Set(catItems.flatMap((i) => i.tags || []))).slice(0, 12);
 
       index.register({

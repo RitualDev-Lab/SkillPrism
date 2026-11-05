@@ -190,15 +190,7 @@ export class ContextCompactor {
 
     // Automated Return Payload Compaction: Store full artifact in SQLite LRU cache
     if (this.sqliteStore?.isAvailable()) {
-      this.sqliteStore.saveReceipt(
-        ref,
-        toolName,
-        summary,
-        rawData,
-        byteSize,
-        tokensSaved,
-        expiry,
-      );
+      this.sqliteStore.saveReceipt(ref, toolName, summary, rawData, byteSize, tokensSaved, expiry);
     }
 
     return {
@@ -236,7 +228,12 @@ export class ContextCompactor {
 
     const compactedContent = rawResult.content.map((block) => {
       // Preserve non-text blocks (image, resource, etc.) without modification
-      if (!block || typeof block !== "object" || block.type !== "text" || typeof block.text !== "string") {
+      if (
+        !block ||
+        typeof block !== "object" ||
+        block.type !== "text" ||
+        typeof block.text !== "string"
+      ) {
         return block;
       }
 
@@ -291,7 +288,11 @@ export class ContextCompactor {
     if (!entry && this.sqliteStore?.isAvailable()) {
       const sqliteData = this.sqliteStore.loadReceiptData(ref);
       if (sqliteData !== null) {
-        entry = { data: sqliteData, createdAt: Date.now(), expiresAt: Date.now() + this.defaultTtlMs };
+        entry = {
+          data: sqliteData,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + this.defaultTtlMs,
+        };
         this.vault.set(ref, entry);
       }
     }

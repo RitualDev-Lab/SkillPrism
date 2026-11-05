@@ -14,4 +14,3 @@ export default defineConfig({
   splitting: true,
   external: ["@xenova/transformers", "node:sqlite"],
 });
-

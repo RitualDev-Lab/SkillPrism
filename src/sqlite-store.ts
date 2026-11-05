@@ -376,10 +376,7 @@ export interface VectorIndexAdapter {
   saveVector(id: string, vector: number[]): boolean;
   saveVectorsBatch(entries: Array<{ id: string; vector: number[] }>): number;
   loadVectors(): Map<string, number[]>;
-  searchNearest(
-    queryVector: number[],
-    topK?: number,
-  ): Array<{ id: string; similarity: number }>;
+  searchNearest(queryVector: number[], topK?: number): Array<{ id: string; similarity: number }>;
 }
 
 /**
@@ -419,10 +416,7 @@ export class SqliteVecIndexAdapter implements VectorIndexAdapter {
     return this.store.loadAllVectors();
   }
 
-  public searchNearest(
-    queryVector: number[],
-    topK = 5,
-  ): Array<{ id: string; similarity: number }> {
+  public searchNearest(queryVector: number[], topK = 5): Array<{ id: string; similarity: number }> {
     return this.store.searchNearestVectors(queryVector, topK);
   }
 }

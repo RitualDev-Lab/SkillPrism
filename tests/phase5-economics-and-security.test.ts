@@ -220,10 +220,7 @@ test("Phase 5: HTTP Bearer Authentication & Origin Controls", async () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 5, method: "tools/list" }),
     });
     assert.equal(allowedOriginRes.status, 200);
-    assert.equal(
-      allowedOriginRes.headers.get("access-control-allow-origin"),
-      ALLOWED_ORIGIN,
-    );
+    assert.equal(allowedOriginRes.headers.get("access-control-allow-origin"), ALLOWED_ORIGIN);
   } finally {
     await proxy.close();
   }
@@ -446,7 +443,8 @@ test("Phase 5: Complete-Task Multi-Turn Trajectory Economics Benchmark & 100% Ta
       id: `enterprise_tool_${i}`,
       name: `Enterprise Tool Service ${i}`,
       summary: `Automated enterprise automation utility ${i}`,
-      description: "Production enterprise utility with authentication, retry logic, and monitoring.",
+      description:
+        "Production enterprise utility with authentication, retry logic, and monitoring.",
       category: "general",
       tags: ["enterprise", `tool_${i}`],
       parameters: [

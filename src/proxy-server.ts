@@ -1,10 +1,7 @@
 import { type IncomingMessage, type ServerResponse, createServer } from "node:http";
 import * as readline from "node:readline";
 import { JitHarness } from "./harness.js";
-import {
-  type JsonRpcNotification,
-  McpProtocolInterceptor,
-} from "./interceptor.js";
+import { type JsonRpcNotification, McpProtocolInterceptor } from "./interceptor.js";
 
 export interface ProxyServerOptions {
   port?: number;
@@ -68,11 +65,7 @@ export class SkillPrismProxyServer {
   ): void {
     const payload = `event: message\ndata: ${JSON.stringify(notification)}\n\n`;
     for (const client of this.sseClients) {
-      if (
-        !targetSessionId ||
-        !client.sessionId ||
-        client.sessionId === targetSessionId
-      ) {
+      if (!targetSessionId || !client.sessionId || client.sessionId === targetSessionId) {
         try {
           client.res.write(payload);
         } catch {
@@ -204,7 +197,11 @@ export class SkillPrismProxyServer {
         const origin = req.headers.origin;
 
         // 1. Origin / CORS Controls
-        if (this.allowedOrigins && this.allowedOrigins.length > 0 && !this.allowedOrigins.includes("*")) {
+        if (
+          this.allowedOrigins &&
+          this.allowedOrigins.length > 0 &&
+          !this.allowedOrigins.includes("*")
+        ) {
           if (origin && !this.allowedOrigins.includes(origin)) {
             res.writeHead(403, { "Content-Type": "application/json" });
             res.end(
@@ -296,7 +293,10 @@ export class SkillPrismProxyServer {
           "") as string;
 
         const activeInterceptor =
-          sessionId && (this.sessionIsolationEnabled || req.headers["mcp-session-id"] || req.headers["x-session-id"])
+          sessionId &&
+          (this.sessionIsolationEnabled ||
+            req.headers["mcp-session-id"] ||
+            req.headers["x-session-id"])
             ? this.getOrCreateSessionInterceptor(sessionId)
             : this.interceptor;
 
@@ -416,7 +416,9 @@ export class SkillPrismProxyServer {
       server.listen(port, host, () => {
         const addr = server.address();
         const actualPort = addr && typeof addr === "object" ? addr.port : port;
-        console.log(`[SkillPrism] Transparent MCP Proxy running at http://${host}:${actualPort}/mcp`);
+        console.log(
+          `[SkillPrism] Transparent MCP Proxy running at http://${host}:${actualPort}/mcp`,
+        );
         resolve();
       });
     });

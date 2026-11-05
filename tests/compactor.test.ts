@@ -145,7 +145,10 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
       ],
     };
 
-    const { isCompacted, result, receipts } = compactor.compactMcpResult("query_txns", rawMcpResult);
+    const { isCompacted, result, receipts } = compactor.compactMcpResult(
+      "query_txns",
+      rawMcpResult,
+    );
 
     assert.equal(isCompacted, true);
     assert.equal(receipts.length, 1);
@@ -183,7 +186,9 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
 
   test("Phase 1 (S1): compactMcpResult preserves image content blocks untouched regardless of size", () => {
     const compactor = new ContextCompactor(128);
-    const massiveBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+".repeat(500);
+    const massiveBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+".repeat(
+      500,
+    );
     const rawMcpResult = {
       content: [
         {
@@ -236,7 +241,10 @@ describe("Phase 4: Dynamic Context Compactor & Semantic Receipt GC Suite", () =>
       ],
     };
 
-    const { isCompacted, result, receipts } = compactor.compactMcpResult("db_connect", rawMcpResult);
+    const { isCompacted, result, receipts } = compactor.compactMcpResult(
+      "db_connect",
+      rawMcpResult,
+    );
 
     assert.equal(isCompacted, true);
     assert.equal(result.isError, true);

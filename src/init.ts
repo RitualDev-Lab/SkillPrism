@@ -45,10 +45,7 @@ export interface InitResult {
  * Injects or updates a managed section inside existing content without
  * destroying pre-existing user instructions or rules.
  */
-export function injectManagedSection(
-  existingContent: string,
-  newSection: string,
-): string {
+export function injectManagedSection(existingContent: string, newSection: string): string {
   if (!existingContent || existingContent.trim().length === 0) {
     return `${newSection}\n`;
   }
@@ -70,9 +67,7 @@ export function injectManagedSection(
 /**
  * Creates a timestamped backup of a file if it exists.
  */
-export async function createTimestampedBackup(
-  filePath: string,
-): Promise<string | null> {
+export async function createTimestampedBackup(filePath: string): Promise<string | null> {
   try {
     await fs.access(filePath);
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");

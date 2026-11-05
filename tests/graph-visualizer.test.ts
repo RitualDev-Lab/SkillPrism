@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { existsSync, unlinkSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   buildVisualGraphData,
@@ -6,7 +7,6 @@ import {
   generateGraphVisualizerHtml,
 } from "../src/graph-visualizer.js";
 import type { SkillDefinition } from "../src/types.js";
-import { existsSync, unlinkSync } from "node:fs";
 
 describe("SkillPrism Interactive D3 Visual Graph Explorer Suite", () => {
   const sampleSkills: SkillDefinition[] = [

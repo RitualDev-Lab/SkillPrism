@@ -112,5 +112,3 @@ export interface McpResourceDefinition {
   blob?: string;
   handler?: () => Promise<any> | any;
 }
-
-
