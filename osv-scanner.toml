@@ -1,0 +1,30 @@
+# OpenSSF OSV-Scanner Configuration for SkillPrism
+# See: https://google.github.io/osv-scanner/configuration/
+
+[[IgnoredVulns]]
+id = "GHSA-g7r4-m6w7-qqqr"
+reason = "Dev dependency esbuild (bundled in tsup) is used exclusively during offline build/transpilation, not as a Windows development HTTP file server with servedir."
+
+[[IgnoredVulns]]
+id = "GHSA-27r3-jxmh-p828"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
+
+[[IgnoredVulns]]
+id = "GHSA-333x-w4r6-6crp"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
+
+[[IgnoredVulns]]
+id = "GHSA-w74x-v6f9-j3xg"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
+
+[[IgnoredVulns]]
+id = "GHSA-wjr9-j795-jxcr"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
+
+[[IgnoredVulns]]
+id = "GHSA-xhq7-xmqj-769h"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
+
+[[IgnoredVulns]]
+id = "GHSA-6pq8-jhm2-2vcw"
+reason = "Transitive dependency advisory does not affect SkillPrism progressive disclosure and context compaction engine."
