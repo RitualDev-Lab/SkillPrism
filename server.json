@@ -3,7 +3,7 @@
   "name": "io.github.RitualDev-Lab/skillprism",
   "title": "SkillPrism MCP Context Optimizer & Tool Search Proxy",
   "description": "Progressive Skill Disclosure, Semantic Tool Search & Context Optimizer for AI Agents",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "status": "active",
   "repository": {
     "url": "https://github.com/RitualDev-Lab/SkillPrism",
@@ -14,7 +14,7 @@
     {
       "registryType": "npm",
       "identifier": "@ritualdev-lab/skillprism",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "transport": {
         "type": "stdio"
       }
