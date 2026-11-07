@@ -217,7 +217,7 @@ export class SkillPrismProxyServer {
             res.setHeader("Vary", "Origin");
           }
         } else {
-          res.setHeader("Access-Control-Allow-Origin", origin || "*");
+          res.setHeader("Access-Control-Allow-Origin", "*");
         }
 
         res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
@@ -225,7 +225,6 @@ export class SkillPrismProxyServer {
           "Access-Control-Allow-Headers",
           "Content-Type, Authorization, mcp-session-id, x-session-id",
         );
-        res.setHeader("Access-Control-Allow-Credentials", "true");
 
         if (req.method === "OPTIONS") {
           res.writeHead(204);
