@@ -1,0 +1,23 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      turnTtl:
+        type: integer
+        default: 3
+        title: "Turn TTL"
+        description: "Number of conversational turns before inactive tools are evicted from the context window"
+      idleTtl:
+        type: integer
+        default: 600
+        title: "Idle TTL (seconds)"
+        description: "Seconds of inactivity before tools are automatically pruned"
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@ritualdev-lab/skillprism', 'proxy', '--stdio', '--turn-ttl', String(config.turnTtl || 3), '--idle-ttl', String(config.idleTtl || 600)]
+    })
+  exampleConfig:
+    turnTtl: 3
+    idleTtl: 600
