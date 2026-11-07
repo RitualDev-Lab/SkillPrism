@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ritualdev-lab/skillprism",
+  "title": "SkillPrism MCP Context Optimizer & Tool Search Proxy",
+  "description": "Progressive Skill Disclosure, Semantic Out-of-Context Tool Search, and Context Window Compactor for Autonomous AI Coding Agents",
+  "version": "1.2.3",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/RitualDev-Lab/SkillPrism",
+    "source": "github"
+  },
+  "website": "https://ritualdev.in/skillprism",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@ritualdev-lab/skillprism",
+      "version": "1.2.3",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
