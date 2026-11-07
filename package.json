@@ -1,6 +1,7 @@
 {
   "name": "@ritualdev-lab/skillprism",
   "version": "1.2.3",
+  "mcpName": "io.github.RitualDev-Lab/skillprism",
   "description": "Progressive Skill Disclosure & Context Compaction Engine for Autonomous AI Coding Agents",
   "type": "module",
   "main": "./dist/index.js",
