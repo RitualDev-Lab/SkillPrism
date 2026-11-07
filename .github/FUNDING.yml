@@ -1,5 +1,6 @@
-# These are supported funding model platforms
-
+# GitHub Sponsors & Dodo Payments Configuration
 github: [RitualDev-Lab]
-custom: ["https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva"]
- 
+custom: [
+  "https://checkout.dodopayments.com/buy/pdt_0NpjONGugY5QkrFDUaPva",
+  "https://ritualdev.in/donate"
+]
