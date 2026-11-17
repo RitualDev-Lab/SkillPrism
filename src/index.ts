@@ -18,3 +18,6 @@ export * from "./graph-visualizer.js";
 export * from "./rrf-discovery.js";
 export * from "./two-tier-cache.js";
 export * from "./taint-tracker.js";
+export * from "./prompt-cache-stack.js";
+export * from "./finops-exporter.js";
+export * from "./redis-sentinel.js";
