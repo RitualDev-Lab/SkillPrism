@@ -335,3 +335,12 @@ SkillPrism is 100% open-source and Apache-2.0 licensed. Your sponsorship directl
 ## 📄 License
 
 Apache-2.0 © 2026 [RitualDev Lab](https://github.com/RitualDev-Lab).
+
+---
+
+## 🛡️ Community & Governance
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Accessibility Statement](ACCESSIBILITY.md)
+- [License](LICENSE)
