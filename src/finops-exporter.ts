@@ -102,7 +102,7 @@ export class FinOpsMetricsExporter {
       `skillprism_latency_p99_ms ${s.p99LatencyMs}`,
     ];
 
-    return lines.join("\n") + "\n";
+    return `${lines.join("\n")}\n`;
   }
 
   /**
