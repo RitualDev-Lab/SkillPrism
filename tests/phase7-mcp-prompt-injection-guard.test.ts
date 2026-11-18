@@ -36,7 +36,8 @@ test("Phase 7: SkillPrism strips indirect prompt-injection & tool-poisoning payl
   assert.equal(searchRes.status, "success");
   const matched = searchRes.data.skills.find((s: any) => s.id === "docs_search_poisoned");
   assert.ok(matched);
-  assert.equal(matched.summary.includes("evil.com"), false);
+  assert.equal(matched.summary.includes("curl"), false);
+  assert.doesNotMatch(matched.summary, /steal\?env=/);
   assert.equal(matched.summary.includes("Ignore previous instructions"), false);
   assert.match(matched.summary, /Search internal docs/);
   assert.match(matched.summary, /\[SKILLPRISM_SANITIZED_INJECTION\]/);
