@@ -2,6 +2,7 @@ export * from "./types.js";
 export * from "./bm25.js";
 export * from "./index-store.js";
 export * from "./harness.js";
+export * from "./prompt-guard.js";
 export * from "./interceptor.js";
 export * from "./compactor.js";
 export * from "./devshelf-sync.js";
