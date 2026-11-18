@@ -1,5 +1,6 @@
 import type { SkillIndex } from "./index-store.js";
 import { toMcpInputSchema } from "./interceptor.js";
+import { sanitizeSkillSummary, sanitizeToolDefinition } from "./prompt-guard.js";
 import type { SkillDefinition } from "./types.js";
 
 /**
@@ -211,7 +212,7 @@ export class JitHarness {
       const results = matches.map((m) => ({
         id: m.skill.id,
         name: m.skill.name,
-        summary: m.skill.summary,
+        summary: sanitizeSkillSummary(m.skill),
         category: m.skill.category,
         permissions: m.skill.permissions || [],
         matchReason: m.matchReason,
@@ -291,11 +292,11 @@ export class JitHarness {
   public convertToToolDefinition(skill: SkillDefinition): MetaToolDefinition {
     if (skill.rawSchema) {
       const normalized = toMcpInputSchema(skill.rawSchema);
-      return {
+      return sanitizeToolDefinition({
         name: skill.id,
         description: skill.description || skill.summary,
         parameters: normalized,
-      };
+      }).tool;
     }
 
     const properties: Record<string, any> = {};
@@ -313,7 +314,7 @@ export class JitHarness {
       }
     }
 
-    return {
+    return sanitizeToolDefinition({
       name: skill.id,
       description: skill.description || skill.summary,
       parameters: {
@@ -321,7 +322,7 @@ export class JitHarness {
         properties,
         required,
       },
-    };
+    }).tool;
   }
 
   /**
